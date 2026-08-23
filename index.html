@@ -708,12 +708,13 @@ const DOW_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 
 // Drives both the Super Admin dashboard and the scoped Admin dashboard from one
 // place. Scoped admins get a smaller tab set ("My Seva" instead of "Seva", no
-// Recurring/Reports) and are locked to their own Seva Type when creating seva —
-// but both roles can create Events and add Seva Opportunities under them.
+// Overview/Reports) and are locked to their own Seva Type when creating seva or
+// recurring patterns — but both roles can create Events, add Seva Opportunities
+// (one-time or recurring) under them, and manage their own recurring patterns.
 async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
   const tabs = isSuperAdmin
     ? [['overview', 'Overview'], ['seva', 'Seva'], ['events', 'Events'], ['recurring', 'Recurring'], ['reports', 'Reports']]
-    : [['seva', 'My Seva'], ['events', 'Events']];
+    : [['seva', 'My Seva'], ['events', 'Events'], ['recurring', 'Recurring']];
 
   content.innerHTML = `
     <div class="pill-toggle">
@@ -862,50 +863,104 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
     wireSevaCardActions(body, seva, showSeva);
   }
 
-  // Shared create/edit modal for a Seva Opportunity.
+  // Shared create/edit modal for a Seva Opportunity. When creating (not editing),
+  // this also covers recurring seva -- Frequency picks between a single date,
+  // every week, or one specific week each month (e.g. "2nd Sunday"), so a single
+  // form handles both once-off and recurring seva under an event.
   // existing: {} for a brand-new standalone seva, {eventId} when adding a seva
   // under a specific event, or a full seva row (from allSeva/adminSeva) to edit.
   function openSevaModal(existing, onDone) {
     const isEdit = !!existing['Seva ID'];
+    const eventId = existing.eventId || '';
     const overlay = openModal(`
-      <div class="sheet-head"><h3>${isEdit ? 'Edit Seva Opportunity' : 'New Seva Opportunity'}</h3><button class="close-x" id="modal-close">✕</button></div>
+      <div class="sheet-head"><h3>${isEdit ? 'Edit Seva Opportunity' : 'New Seva'}</h3><button class="close-x" id="modal-close">✕</button></div>
       ${isSuperAdmin ? `<div class="field"><label>Seva Type ID</label><input id="ns-type" value="${isEdit ? escapeHtml(existing['Seva Type ID']) : ''}" placeholder="e.g. ST_ABC123"></div>` : ''}
-      ${!isEdit ? `<div class="field"><label>Event ID (optional)</label><input id="ns-event" value="${existing.eventId ? escapeHtml(existing.eventId) : ''}" placeholder="Leave blank for a standalone / ad-hoc seva"></div>` : ''}
+      ${!isEdit && !eventId ? `<div class="field"><label>Event ID (optional)</label><input id="ns-event" placeholder="Leave blank for a standalone / ad-hoc seva"></div>` : ''}
+      ${eventId ? `<p class="helper">Adding this under the event you selected.</p>` : ''}
       <div class="field"><label>Seva Name</label><input id="ns-name" value="${isEdit ? escapeHtml(existing['Seva Name']) : ''}"></div>
-      <div class="row-2">
-        <div class="field"><label>Date</label><input id="ns-date" type="date" value="${isEdit ? fmtInputDate(existing['Date']) : ''}"></div>
-        <div class="field"><label>Max Volunteers</label><input id="ns-max" type="number" value="${isEdit ? escapeHtml(existing['Max Volunteers']) : ''}"></div>
+      ${isEdit ? `
+      <div class="field"><label>Date</label><input id="ns-date" type="date" value="${fmtInputDate(existing['Date'])}"></div>
+      ` : `
+      <div class="field"><label>Frequency</label>
+        <select id="ns-freq">
+          <option value="ONCE">Just one date</option>
+          <option value="WEEKLY">Every week</option>
+          <option value="MONTHLY_NTH" selected>One specific week each month</option>
+        </select>
       </div>
+      <div id="ns-once-wrap" style="display:none;">
+        <div class="field"><label>Date</label><input id="ns-date" type="date"></div>
+      </div>
+      <div id="ns-recur-wrap" class="row-2">
+        <div class="field"><label>Day of Week</label>
+          <select id="ns-dow">${DOW_NAMES.map((d, i) => `<option value="${i}" ${i === 0 ? 'selected' : ''}>${d}</option>`).join('')}</select>
+        </div>
+        <div class="field" id="ns-week-wrap">
+          <label>Which week</label>
+          <select id="ns-week">
+            <option value="1" selected>1st</option><option value="2">2nd</option><option value="3">3rd</option>
+            <option value="4">4th</option><option value="LAST">Last</option>
+          </select>
+        </div>
+      </div>
+      `}
       <div class="row-2">
         <div class="field"><label>Start Time</label><input id="ns-start" type="time" value="${isEdit ? fmtTimeInput(existing['Start Time']) : ''}"></div>
         <div class="field"><label>End Time</label><input id="ns-end" type="time" value="${isEdit ? fmtTimeInput(existing['End Time']) : ''}"></div>
       </div>
-      <div class="field"><label>Location</label><input id="ns-location" value="${isEdit ? escapeHtml(existing['Location']) : ''}"></div>
+      <div class="row-2">
+        <div class="field"><label>Location</label><input id="ns-location" value="${isEdit ? escapeHtml(existing['Location']) : ''}"></div>
+        <div class="field"><label>Max Volunteers</label><input id="ns-max" type="number" value="${isEdit ? escapeHtml(existing['Max Volunteers']) : ''}"></div>
+      </div>
       <button class="btn btn-primary" id="ns-submit">${isEdit ? 'Save Changes' : 'Create'}</button>
-      ${isSuperAdmin ? '<p class="helper">Find Seva Type IDs in the SevaTypes tab, and Event IDs in the Events tab (or the Events screen here).</p>' : '<p class="helper">This will be created under your assigned Seva Type.</p>'}
+      ${!isEdit ? '<p class="helper">"One specific week each month" (e.g. 2nd Sunday) is the usual choice for a monthly seva. Pick "Every week" for a weekly seva like every Sunday, or "Just one date" for a single occurrence.</p>' : ''}
       <div id="ns-msg"></div>
     `);
     overlay.querySelector('#modal-close').addEventListener('click', () => overlay.remove());
+
+    if (!isEdit) {
+      const freqEl = overlay.querySelector('#ns-freq');
+      const onceWrap = overlay.querySelector('#ns-once-wrap');
+      const recurWrap = overlay.querySelector('#ns-recur-wrap');
+      const weekWrap = overlay.querySelector('#ns-week-wrap');
+      const syncFreq = () => {
+        const v = freqEl.value;
+        onceWrap.style.display = v === 'ONCE' ? 'block' : 'none';
+        recurWrap.style.display = v === 'ONCE' ? 'none' : 'grid';
+        weekWrap.style.display = v === 'MONTHLY_NTH' ? 'block' : 'none';
+      };
+      freqEl.addEventListener('change', syncFreq);
+      syncFreq();
+    }
+
     overlay.querySelector('#ns-submit').addEventListener('click', async () => {
-      const payload = {
+      const freq = isEdit ? 'ONCE' : overlay.querySelector('#ns-freq').value;
+      const common = {
         pin,
         name: overlay.querySelector('#ns-name').value.trim(),
-        date: overlay.querySelector('#ns-date').value,
         startTime: overlay.querySelector('#ns-start').value,
         endTime: overlay.querySelector('#ns-end').value,
         location: overlay.querySelector('#ns-location').value.trim(),
         maxVolunteers: overlay.querySelector('#ns-max').value
       };
+      if (isSuperAdmin && overlay.querySelector('#ns-type')) common.sevaTypeId = overlay.querySelector('#ns-type').value.trim();
       try {
         if (isEdit) {
-          payload.sevaId = existing['Seva ID'];
-          await api.post('updateSeva', payload);
+          await api.post('updateSeva', Object.assign(common, { sevaId: existing['Seva ID'], date: overlay.querySelector('#ns-date').value }));
           toast('Seva opportunity updated.');
-        } else {
-          if (isSuperAdmin) payload.sevaTypeId = overlay.querySelector('#ns-type').value.trim();
-          payload.eventId = existing.eventId || overlay.querySelector('#ns-event').value.trim();
-          await api.post('createSeva', payload);
+        } else if (freq === 'ONCE') {
+          const evId = eventId || (overlay.querySelector('#ns-event') ? overlay.querySelector('#ns-event').value.trim() : '');
+          await api.post('createSeva', Object.assign(common, { date: overlay.querySelector('#ns-date').value, eventId: evId }));
           toast('Seva opportunity created.');
+        } else {
+          const evId = eventId || (overlay.querySelector('#ns-event') ? overlay.querySelector('#ns-event').value.trim() : '');
+          const result = await api.post('createRecurringPattern', Object.assign(common, {
+            recurrenceType: freq,
+            dayOfWeek: overlay.querySelector('#ns-dow').value,
+            weekOfMonth: overlay.querySelector('#ns-week').value,
+            eventId: evId
+          }));
+          toast(`Recurring seva created — ${result.created} date${result.created === 1 ? '' : 's'} already scheduled.`);
         }
         bustCache();
         overlay.remove();
@@ -1029,11 +1084,17 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
     });
   }
 
-  // ---- Recurring Seva (weekly or "Nth weekday of month") — Super Admin only ----
+  // ---- Recurring Seva (weekly or "Nth weekday of month") ----
+  // Any admin can see and manage this now: a scoped admin only sees/creates
+  // patterns for their own Seva Type (enforced server-side), Super Admin sees all.
   async function showRecurring() {
     paintTabs('recurring');
     body.innerHTML = skeletons(2);
-    const patterns = await cachedGet('allRecurringPatterns:' + pin, () => api.get('allRecurringPatterns', { pin }), 8000);
+    const [patterns, events] = await Promise.all([
+      cachedGet('allRecurringPatterns:' + pin, () => api.get('allRecurringPatterns', { pin }), 8000),
+      cachedGet('allEvents:' + pin, () => api.get('allEvents', { pin }), 8000)
+    ]);
+    const eventName = (id) => { const ev = events.find(e => String(e['Event ID']) === String(id)); return ev ? ev['Event Name'] : null; };
     body.innerHTML = `
       <button class="btn btn-primary" id="new-recur-btn" style="margin-bottom:10px;">+ New Recurring Seva</button>
       <button class="btn btn-ghost" id="generate-recur-btn" style="margin-bottom:14px;">Generate Occurrences Now</button>
@@ -1047,6 +1108,7 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
             <span>${describePattern(p)}</span>
             ${p['Start Time'] ? `<span>⏰ ${fmtTime(p['Start Time'])}${p['End Time'] ? '–' + fmtTime(p['End Time']) : ''}</span>` : ''}
             ${p['Location'] ? `<span>📍 ${escapeHtml(p['Location'])}</span>` : ''}
+            ${p['Event ID'] && eventName(p['Event ID']) ? `<span class="badge event">${escapeHtml(eventName(p['Event ID']))}</span>` : ''}
           </div>
           <button class="btn btn-outline small" data-toggle-pattern="${escapeHtml(p['Pattern ID'])}" data-active="${String(p['Active']).toUpperCase()}">
             ${String(p['Active']).toUpperCase() === 'TRUE' ? 'Pause' : 'Resume'}
@@ -1054,7 +1116,7 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
         </div>
       `).join('') : '<div class="empty">No recurring seva set up yet.</div>'}
     `;
-    document.getElementById('new-recur-btn').addEventListener('click', () => openRecurringModal());
+    document.getElementById('new-recur-btn').addEventListener('click', () => openRecurringModal(events));
     document.getElementById('generate-recur-btn').addEventListener('click', async () => {
       try {
         const result = await api.post('generateRecurringOccurrences', { pin });
@@ -1084,25 +1146,33 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
     return `🔁 Every ${dow}`;
   }
 
-  function openRecurringModal() {
+  // events: the already-fetched event list, so this can offer an optional
+  // "attach to an event" dropdown without a separate round trip.
+  function openRecurringModal(events) {
     const overlay = openModal(`
       <div class="sheet-head"><h3>New Recurring Seva</h3><button class="close-x" id="modal-close">✕</button></div>
-      <div class="field"><label>Seva Type ID</label><input id="rp-type" placeholder="e.g. ST_ABC123"></div>
+      ${isSuperAdmin ? `<div class="field"><label>Seva Type ID</label><input id="rp-type" placeholder="e.g. ST_ABC123"></div>` : ''}
+      <div class="field"><label>Event (optional)</label>
+        <select id="rp-event">
+          <option value="">Standalone — not tied to an event</option>
+          ${(events || []).map(ev => `<option value="${escapeHtml(ev['Event ID'])}">${escapeHtml(ev['Event Name'])}</option>`).join('')}
+        </select>
+      </div>
       <div class="field"><label>Seva Name</label><input id="rp-name"></div>
       <div class="field"><label>Repeats</label>
         <select id="rp-recurtype">
           <option value="WEEKLY">Every week</option>
-          <option value="MONTHLY_NTH">One specific week each month</option>
+          <option value="MONTHLY_NTH" selected>One specific week each month</option>
         </select>
       </div>
       <div class="row-2">
         <div class="field"><label>Day of Week</label>
-          <select id="rp-dow">${DOW_NAMES.map((d, i) => `<option value="${i}">${d}</option>`).join('')}</select>
+          <select id="rp-dow">${DOW_NAMES.map((d, i) => `<option value="${i}" ${i === 0 ? 'selected' : ''}>${d}</option>`).join('')}</select>
         </div>
-        <div class="field" id="rp-week-wrap" style="display:none;">
+        <div class="field" id="rp-week-wrap">
           <label>Which week</label>
           <select id="rp-week">
-            <option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option>
+            <option value="1" selected>1st</option><option value="2">2nd</option><option value="3">3rd</option>
             <option value="4">4th</option><option value="LAST">Last</option>
           </select>
         </div>
@@ -1116,32 +1186,34 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
         <div class="field"><label>Max Volunteers</label><input id="rp-max" type="number"></div>
       </div>
       <button class="btn btn-primary" id="rp-submit">Create Recurring Seva</button>
-      <p class="helper">Example: "2nd Sunday every month" — pick Monthly, Sunday, and 2nd.</p>
+      <p class="helper">"One specific week each month" (e.g. 2nd Sunday) suits most monthly seva. Pick "Every week" for something like every Sunday instead.</p>
       <div id="rp-msg"></div>
     `);
     overlay.querySelector('#modal-close').addEventListener('click', () => overlay.remove());
     const recurTypeEl = overlay.querySelector('#rp-recurtype');
     const weekWrap = overlay.querySelector('#rp-week-wrap');
-    recurTypeEl.addEventListener('change', () => {
-      weekWrap.style.display = recurTypeEl.value === 'MONTHLY_NTH' ? 'block' : 'none';
-    });
+    const syncRecurType = () => { weekWrap.style.display = recurTypeEl.value === 'MONTHLY_NTH' ? 'block' : 'none'; };
+    recurTypeEl.addEventListener('change', syncRecurType);
+    syncRecurType();
     overlay.querySelector('#rp-submit').addEventListener('click', async () => {
+      const payload = {
+        pin,
+        eventId: overlay.querySelector('#rp-event').value,
+        name: overlay.querySelector('#rp-name').value.trim(),
+        recurrenceType: recurTypeEl.value,
+        dayOfWeek: overlay.querySelector('#rp-dow').value,
+        weekOfMonth: overlay.querySelector('#rp-week').value,
+        startTime: overlay.querySelector('#rp-start').value,
+        endTime: overlay.querySelector('#rp-end').value,
+        location: overlay.querySelector('#rp-location').value.trim(),
+        maxVolunteers: overlay.querySelector('#rp-max').value
+      };
+      if (isSuperAdmin) payload.sevaTypeId = overlay.querySelector('#rp-type').value.trim();
       try {
-        await api.post('createRecurringPattern', {
-          pin,
-          sevaTypeId: overlay.querySelector('#rp-type').value.trim(),
-          name: overlay.querySelector('#rp-name').value.trim(),
-          recurrenceType: recurTypeEl.value,
-          dayOfWeek: overlay.querySelector('#rp-dow').value,
-          weekOfMonth: overlay.querySelector('#rp-week').value,
-          startTime: overlay.querySelector('#rp-start').value,
-          endTime: overlay.querySelector('#rp-end').value,
-          location: overlay.querySelector('#rp-location').value.trim(),
-          maxVolunteers: overlay.querySelector('#rp-max').value
-        });
+        const result = await api.post('createRecurringPattern', payload);
         bustCache();
         overlay.remove();
-        toast('Recurring seva created. Click "Generate Occurrences Now" to schedule the next dates.');
+        toast(`Recurring seva created — ${result.created} date${result.created === 1 ? '' : 's'} already scheduled.`);
         showRecurring();
       } catch (e) { overlay.querySelector('#rp-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`; }
     });
