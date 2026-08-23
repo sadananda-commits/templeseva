@@ -63,11 +63,20 @@ img{max-width:100%;}
 .app{max-width:640px; margin:0 auto; min-height:100vh; background:var(--bg); position:relative;}
 header.top{
   background:linear-gradient(180deg, var(--accent) 0%, #611730 100%);
-  color:#fff; padding:20px 20px 24px;
+  color:#fff; padding:20px 20px 24px; position:relative;
 }
-header.top .eyebrow{font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; opacity:.85; font-weight:600;}
+header.top .eyebrow{font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; opacity:.85; font-weight:600; padding-right:64px;}
 header.top h1{font-size:28px; color:#fff; margin-top:2px;}
 header.top p.tag{margin:6px 0 0; opacity:.9; font-size:14.5px;}
+.admin-corner-btn{
+  position:absolute; top:14px; right:14px; z-index:5;
+  display:inline-flex; align-items:center; gap:5px;
+  background:rgba(255,255,255,0.16); color:#fff; border:1px solid rgba(255,255,255,0.35);
+  border-radius:999px; padding:6px 11px; font-family:var(--font-display); font-weight:600;
+  font-size:12px; cursor:pointer; white-space:nowrap;
+}
+.admin-corner-btn:active{background:rgba(255,255,255,0.28);}
+.admin-corner-btn.active{background:#fff; color:var(--accent);}
 nav.tabs{
   display:flex; gap:6px; padding:10px 12px; background:var(--surface);
   position:sticky; top:0; z-index:20; border-bottom:1px solid var(--line);
@@ -142,6 +151,8 @@ section.block h2{font-size:19px; margin-bottom:10px;}
 .result-item{padding:11px 13px; border-bottom:1px solid var(--line); cursor:pointer; font-size:14px;}
 .result-item:last-child{border-bottom:none;}
 .result-item:active{background:var(--surface-warm);}
+.result-item.selected{background:var(--primary-soft); box-shadow:inset 3px 0 0 var(--primary);}
+.result-item[data-full]{opacity:.65;}
 .result-item .r-name{font-weight:600;}
 .result-item .r-mobile{color:var(--ink-soft); font-size:12.5px;}
 
@@ -158,10 +169,43 @@ section.block h2{font-size:19px; margin-bottom:10px;}
 table.simple{width:100%; border-collapse:collapse; font-size:13px;}
 table.simple th, table.simple td{text-align:left; padding:7px 5px; border-bottom:1px solid var(--line);}
 table.simple th{color:var(--ink-soft); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:.03em;}
+
+/* ---- Expandable data table (seva / events / my seva) ---- */
+.table-wrap{overflow-x:auto; border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid var(--line); background:var(--surface); margin-bottom:12px;}
+table.data-table{width:100%; border-collapse:collapse; font-size:13.5px;}
+table.data-table th{background:var(--surface-warm); text-align:left; padding:9px 10px; font-size:10.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft); font-weight:700; border-bottom:1px solid var(--line); white-space:nowrap;}
+table.data-table td{padding:10px; border-bottom:1px solid var(--line); vertical-align:top;}
+table.data-table tr:last-child td{border-bottom:none;}
+table.data-table tr.row-summary{cursor:pointer;}
+table.data-table tr.row-summary:active{background:var(--surface-warm);}
+table.data-table tr.row-detail td{background:var(--surface-warm); padding:4px 10px 14px;}
+table.data-table tr.row-detail.hidden{display:none;}
+table.data-table .row-chevron{display:inline-block; font-size:11px; color:var(--ink-soft); margin-right:4px; transition:transform .15s;}
+table.data-table tr.expanded .row-chevron{transform:rotate(90deg);}
+table.data-table .name-cell{font-weight:600;}
+table.data-table .sub{display:block; font-size:11.5px; color:var(--ink-soft); font-weight:400; margin-top:1px;}
 .reg-row{display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); gap:8px;}
 .reg-row:last-child{border-bottom:none;}
 .reg-row .who{font-size:14px;}
 .reg-row .who .m{color:var(--ink-soft); font-size:12px;}
+
+/* ---- Confirm checkbox (Upcoming Seva tab) ----
+   Custom control rather than a native <input type=checkbox> so we can fully
+   own the click/dblclick semantics: single click -> confirmed, double click
+   -> un-confirmed. Only rendered once a participant is identified AND
+   already registered for that row; everyone else sees a plain dash. */
+.confirm-cell{text-align:center;}
+.confirm-box{
+  width:24px; height:24px; border-radius:7px; border:2px solid var(--line); background:var(--surface);
+  display:inline-flex; align-items:center; justify-content:center; padding:0; cursor:pointer;
+  transition:background .12s, border-color .12s; -webkit-tap-highlight-color:transparent; user-select:none;
+}
+.confirm-box::after{content:''; width:11px; height:7px; border-left:2.5px solid #fff; border-bottom:2.5px solid #fff; transform:rotate(-45deg) translateY(-1px); opacity:0;}
+.confirm-box.checked{background:var(--success); border-color:var(--success);}
+.confirm-box.checked::after{opacity:1;}
+.confirm-box.busy{opacity:.5; cursor:wait;}
+.confirm-dash{color:var(--ink-soft); font-size:15px;}
+.confirm-hint{display:block; font-size:10.5px; color:var(--ink-soft); font-weight:400; margin-top:2px; white-space:nowrap;}
 .pill-toggle{display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; -webkit-overflow-scrolling:touch;}
 .pill-toggle .btn{width:auto; white-space:nowrap;}
 .tag-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
@@ -180,8 +224,9 @@ table.simple th{color:var(--ink-soft); font-weight:600; font-size:11.5px; text-t
 <body>
 <div class="app" id="app">
   <header class="top">
-    <div class="eyebrow" id="hdr-eyebrow">Temple Seva</div>
-    <h1 id="hdr-title">Temple Seva</h1>
+    <button class="admin-corner-btn" id="admin-corner-btn" type="button">⚙ Admin</button>
+    <div class="eyebrow" id="hdr-eyebrow">Hare Krishna Temple</div>
+    <h1 id="hdr-title">Seva Opportunities</h1>
     <p class="tag" id="hdr-tag">Serve with devotion. Participate in seva.</p>
   </header>
   <div class="garland"></div>
@@ -189,7 +234,6 @@ table.simple th{color:var(--ink-soft); font-weight:600; font-size:11.5px; text-t
     <button data-tab="home">Upcoming Seva</button>
     <button data-tab="events">Events</button>
     <button data-tab="myseva">My Seva</button>
-    <button data-tab="admin">Admin</button>
   </nav>
   <main id="main"></main>
 </div>
@@ -200,7 +244,7 @@ table.simple th{color:var(--ink-soft); font-weight:600; font-size:11.5px; text-t
    ============================================================ */
 const CONFIG = {
   API_URL: 'https://script.google.com/macros/s/AKfycbxONGMsHwUypS-ucqRD_6i2FgyueKlvvuyYVW2fk70fkfgRRW4BQ-iS8KbE11yH1aU_/exec',
-  TEMPLE_NAME: 'Temple Seva',
+  TEMPLE_NAME: 'Hare Krishna Temple',
   TAGLINE: 'Serve with devotion. Participate in seva.'
 };
 document.getElementById('hdr-eyebrow').textContent = CONFIG.TEMPLE_NAME;
@@ -252,7 +296,7 @@ const store = {
   clearAdmin() { sessionStorage.removeItem('seva_admin'); }
 };
 
-let state = { tab: 'home', route: {}, sevaList: [] };
+let state = { tab: 'home', route: {}, sevaList: [], groupList: [] };
 
 function toast(msg) {
   const el = document.createElement('div');
@@ -261,11 +305,22 @@ function toast(msg) {
   setTimeout(() => el.remove(), 2400);
 }
 
+// The API now always sends dates as plain "yyyy-MM-dd" text (see
+// fixDateColumnFormats/dateStr_ on the backend). We format that directly
+// from its numeric parts instead of going through `new Date(str)` +
+// toLocaleDateString, which would round-trip through UTC-midnight and then
+// the browser's local timezone -- reintroducing an off-by-one-day shift for
+// anyone west of the temple's timezone.
+const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 function fmtDate(d) {
   if (!d) return '';
-  const dt = new Date(d);
-  if (isNaN(dt)) return d;
-  return dt.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+  const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return d;
+  const y = Number(m[1]), mo = Number(m[2]), day = Number(m[3]);
+  // Noon avoids any DST-edge weirdness; only used to derive the weekday name.
+  const weekday = WEEKDAY_SHORT[new Date(y, mo - 1, day, 12).getDay()];
+  return `${weekday}, ${day} ${MONTH_SHORT[mo - 1]}`;
 }
 // Google Sheets stores time-only cells as a Date on 1899-12-30, which the API
 // serializes as e.g. "1899-12-30T15:30:00.000Z". This turns that (or a plain
@@ -311,6 +366,7 @@ const skeletons = (n) => Array(n).fill('<div class="skeleton"></div>').join('');
 function setTab(tab, route) {
   state.tab = tab; state.route = route || {};
   document.querySelectorAll('#nav-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('admin-corner-btn').classList.toggle('active', tab === 'admin');
   renderMain();
 }
 
@@ -331,53 +387,180 @@ document.getElementById('nav-tabs').addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-tab]');
   if (btn) setTab(btn.dataset.tab);
 });
+document.getElementById('admin-corner-btn').addEventListener('click', () => setTab('admin'));
 
 /* ---------------- Seva card ---------------- */
-function sevaCard(s) {
+/* ---------------- Expandable data table helper ---------------- */
+function tableShell(headers, bodyRowsHtml) {
+  return `<div class="table-wrap"><table class="data-table">
+    <thead><tr>${headers.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+    <tbody>${bodyRowsHtml}</tbody>
+  </table></div>`;
+}
+// Click a summary row to reveal/hide its detail row (which holds the
+// description and any action buttons). Clicks that originate on a real
+// <button> inside a row are left alone so Register/Cancel/etc. still work.
+function bindExpandableRows(container) {
+  container.querySelectorAll('tr.row-summary').forEach(tr => {
+    tr.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return;
+      const detail = tr.nextElementSibling;
+      if (!detail || !detail.classList.contains('row-detail')) return;
+      detail.classList.toggle('hidden');
+      tr.classList.toggle('expanded');
+    });
+  });
+}
+
+/* ---------------- Seva row (used on Home + inside an Event) ---------------- */
+function sevaRow(s) {
   const max = Number(s['Max Volunteers']) || 0;
   const count = s.RegisteredCount || 0;
-  const pct = max > 0 ? Math.min(100, Math.round((count / max) * 100)) : 0;
   const full = s.IsFull;
+  const pct = max > 0 ? Math.min(100, Math.round((count / max) * 100)) : 0;
+  const slotsText = max > 0 ? `${count}/${max}` : `${count}`;
+  const timeText = s['Start Time'] ? `${fmtTime(s['Start Time'])}${s['End Time'] ? '–' + fmtTime(s['End Time']) : ''}` : '';
   return `
-    <div class="card" data-seva-id="${escapeHtml(s['Seva ID'])}">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
-        <div class="card-title">${escapeHtml(s['Seva Name'])}</div>
-        <span class="badge ${full ? 'full' : 'open'}">${full ? 'FULL' : 'OPEN'}</span>
-      </div>
-      <div class="meta">
-        <span>📅 ${fmtDate(s['Date'])}</span>
-        <span>⏰ ${fmtTime(s['Start Time'])}${s['End Time'] ? '–' + fmtTime(s['End Time']) : ''}</span>
-        ${s['Location'] ? `<span>📍 ${escapeHtml(s['Location'])}</span>` : ''}
-        ${s['Recurring Pattern ID'] ? `<span class="badge recur">RECURRING</span>` : ''}
-      </div>
-      ${s['Instructions'] ? `<div class="desc">${escapeHtml(s['Instructions'])}</div>` : ''}
+    <tr class="row-summary" data-seva-row="${escapeHtml(s['Seva ID'])}">
+      <td class="name-cell"><span class="row-chevron">▸</span>${escapeHtml(s['Seva Name'])}${s['Recurring Pattern ID'] ? '<span class="sub">Recurring</span>' : ''}</td>
+      <td>${fmtDate(s['Date'])}${timeText ? `<span class="sub">${timeText}</span>` : ''}</td>
+      <td><span class="slot-text ${full ? 'full' : 'ok'}">${slotsText}</span></td>
+    </tr>
+    <tr class="row-detail hidden"><td colspan="3">
+      ${s['Location'] ? `<div class="muted" style="margin:8px 0 4px;">📍 ${escapeHtml(s['Location'])}</div>` : ''}
+      ${s['Instructions'] ? `<div class="desc" style="margin:6px 0;">${escapeHtml(s['Instructions'])}</div>` : ''}
+      ${s['Contact Person'] ? `<div class="muted" style="margin:4px 0 8px;">Contact: ${escapeHtml(s['Contact Person'])}${s['Contact Number'] ? ' · ' + escapeHtml(s['Contact Number']) : ''}</div>` : ''}
       ${max > 0 ? `
         <div class="slotbar"><div class="fill" style="width:${pct}%"></div></div>
         <div class="slot-text ${full ? 'full' : 'ok'}">${count} / ${max} volunteers${full ? '' : ' &middot; ' + (max - count) + ' slots remaining'}</div>
-      ` : `<div class="slot-text ok">${count} registered</div>`}
-      <div style="margin-top:11px;">
-        <button class="btn ${full ? 'btn-ghost' : 'btn-primary'}" ${full ? 'disabled' : ''} data-register="${escapeHtml(s['Seva ID'])}">
-          ${full ? 'Full — Join Waitlist' : 'Register for Seva'}
-        </button>
-      </div>
-    </div>
+      ` : ''}
+      <button class="btn ${full ? 'btn-ghost' : 'btn-primary'}" style="margin-top:10px;" ${full ? 'disabled' : ''} data-register="${escapeHtml(s['Seva ID'])}">
+        ${full ? 'Full — Join Waitlist' : 'Register for Seva'}
+      </button>
+    </td></tr>
+  `;
+}
+
+/* ---------------- Grouped seva row (Upcoming Seva tab only) ----------------
+   One row per recurring pattern (or per standalone seva) instead of one row
+   per dated occurrence -- see getUpcomingSevaGrouped_ on the backend. The
+   Confirm checkbox only appears once the visitor is identified (store.me)
+   AND already holds a registration for the row's next occurrence; otherwise
+   there's nothing for "confirm" to mean yet, so we show a Register button
+   instead (opened via the group flow below) or a plain dash. */
+function groupRow(g) {
+  const max = Number(g.maxVolunteers) || 0;
+  const count = g.registeredCount || 0;
+  const full = g.isFull;
+  const pct = max > 0 ? Math.min(100, Math.round((count / max) * 100)) : 0;
+  const slotsText = max > 0 ? `${count}/${max}` : `${count}`;
+  const timeText = g.nextStartTime ? `${fmtTime(g.nextStartTime)}${g.nextEndTime ? '–' + fmtTime(g.nextEndTime) : ''}` : '';
+  const recurSub = g.isRecurring ? `<span class="sub">Recurring · next ${g.upcomingOccurrenceCount} scheduled</span>` : '';
+
+  let confirmCell;
+  if (g.myRegistrationId) {
+    confirmCell = `<button type="button" class="confirm-box ${g.confirmed ? 'checked' : ''}"
+      data-confirm-box data-reg-id="${escapeHtml(g.myRegistrationId)}"
+      aria-pressed="${g.confirmed ? 'true' : 'false'}" title="${g.confirmed ? 'Confirmed — double-click to undo' : 'Click to confirm'}"></button>`;
+  } else {
+    confirmCell = `<span class="confirm-dash">–</span>`;
+  }
+
+  return `
+    <tr class="row-summary" data-group-row="${escapeHtml(g.groupId)}">
+      <td class="name-cell"><span class="row-chevron">▸</span>${escapeHtml(g.sevaName)}${recurSub}</td>
+      <td>${fmtDate(g.nextDate)}${timeText ? `<span class="sub">${timeText}</span>` : ''}</td>
+      <td><span class="slot-text ${full ? 'full' : 'ok'}">${slotsText}</span></td>
+      <td class="confirm-cell">${confirmCell}</td>
+    </tr>
+    <tr class="row-detail hidden"><td colspan="4">
+      ${g.location ? `<div class="muted" style="margin:8px 0 4px;">📍 ${escapeHtml(g.location)}</div>` : ''}
+      ${max > 0 ? `
+        <div class="slotbar"><div class="fill" style="width:${pct}%"></div></div>
+        <div class="slot-text ${full ? 'full' : 'ok'}">${count} / ${max} volunteers${full ? '' : ' &middot; ' + (max - count) + ' slots remaining'}</div>
+      ` : ''}
+      ${g.registeredForPattern
+        ? `<p class="muted" style="margin-top:10px;">You're already booked for this${g.isRecurring ? ' recurring seva' : ''}. Use the Confirm box above ahead of each date, or manage it from My Seva.</p>`
+        : `<button class="btn ${full ? 'btn-ghost' : 'btn-primary'}" style="margin-top:10px;" ${full ? 'disabled' : ''} data-group-register="${escapeHtml(g.groupId)}">
+            ${full ? 'Full — Join Waitlist' : (g.isRecurring ? `Register — books next ${g.upcomingOccurrenceCount >= 4 ? 4 : g.upcomingOccurrenceCount} dates` : 'Register for Seva')}
+          </button>`}
+    </td></tr>
   `;
 }
 
 /* ---------------- Home ---------------- */
 async function renderHome(main) {
-  if (!cache.has('upcomingSeva')) main.innerHTML = skeletons(3);
-  const seva = await cachedGet('upcomingSeva', () => api.get('upcomingSeva'));
-  state.sevaList = seva;
-  if (!seva.length) {
+  const me = store.me;
+  const cacheKey = 'upcomingSevaGrouped:' + (me ? me.participantId : 'anon');
+  if (!cache.has(cacheKey)) main.innerHTML = skeletons(3);
+  const params = me && me.participantId && me.mobile ? { participantId: me.participantId, mobile: me.mobile } : {};
+  const groups = await cachedGet(cacheKey, () => api.get('upcomingSevaGrouped', params));
+  state.groupList = groups;
+  if (!groups.length) {
     main.innerHTML = `<div class="empty"><div class="glyph">🪔</div><p>No seva opportunities open right now. Please check back soon.</p></div>`;
     return;
   }
-  main.innerHTML = `<section class="block"><h2>Upcoming Seva</h2>${seva.map(sevaCard).join('')}</section>`;
-  bindRegisterButtons();
+  main.innerHTML = `<section class="block"><h2>Upcoming Seva</h2>${tableShell(['Seva', 'When', 'Slots', 'Confirm'], groups.map(groupRow).join(''))}</section>`;
+  bindExpandableRows(main);
+  bindGroupRegisterButtons();
+  bindConfirmBoxes(main);
+}
+
+/* ---- Confirm checkbox click/dblclick handling ----
+   Single click -> confirmed:true. Double click -> confirmed:false. We hold
+   the single-click action behind a short timer so a dblclick can cancel it
+   before it fires, rather than letting both handlers race. */
+function bindConfirmBoxes(main) {
+  main.querySelectorAll('[data-confirm-box]').forEach(box => {
+    let pendingTimer = null;
+    box.addEventListener('click', () => {
+      if (pendingTimer) return; // second click of a dblclick -- let dblclick handle it
+      pendingTimer = setTimeout(() => {
+        pendingTimer = null;
+        setConfirmState(box, true);
+      }, 280);
+    });
+    box.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
+      setConfirmState(box, false);
+    });
+  });
+}
+async function setConfirmState(box, confirmed) {
+  const me = store.me;
+  if (!me || !me.mobile) { toast('Please identify yourself first (open Register or My Seva).'); return; }
+  const registrationId = box.dataset.regId;
+  box.classList.add('busy');
+  try {
+    await api.post('toggleConfirm', { registrationId, mobile: me.mobile, confirmed });
+    box.classList.toggle('checked', confirmed);
+    box.setAttribute('aria-pressed', confirmed ? 'true' : 'false');
+    box.title = confirmed ? 'Confirmed — double-click to undo' : 'Click to confirm';
+    bustCache();
+    toast(confirmed ? 'Confirmed. See you there! 🙏' : 'Confirmation removed.');
+  } catch (e) {
+    toast(e.message || 'Could not update confirmation.');
+  } finally {
+    box.classList.remove('busy');
+  }
 }
 
 /* ---------------- Events ---------------- */
+function eventRow(ev) {
+  const dateText = fmtDate(ev['Start Date']) + (ev['End Date'] && ev['End Date'] !== ev['Start Date'] ? ' – ' + fmtDate(ev['End Date']) : '');
+  return `
+    <tr class="row-summary" data-event-row="${escapeHtml(ev['Event ID'])}">
+      <td class="name-cell"><span class="row-chevron">▸</span>${escapeHtml(ev['Event Name'])}</td>
+      <td>${dateText}</td>
+      <td>${ev['Location'] ? escapeHtml(ev['Location']) : ''}</td>
+    </tr>
+    <tr class="row-detail hidden"><td colspan="3">
+      ${ev['Description'] ? `<div class="desc" style="margin:8px 0 10px;">${escapeHtml(ev['Description'])}</div>` : ''}
+      <button class="btn btn-outline" style="margin-top:4px;" data-view-event="${escapeHtml(ev['Event ID'])}">View Seva Opportunities</button>
+    </td></tr>
+  `;
+}
 async function renderEvents(main) {
   if (!cache.has('eventList')) main.innerHTML = skeletons(2);
   const events = await cachedGet('eventList', () => api.get('eventList'));
@@ -385,25 +568,10 @@ async function renderEvents(main) {
     main.innerHTML = `<div class="empty"><div class="glyph">🎉</div><p>No upcoming events scheduled.</p></div>`;
     return;
   }
-  main.innerHTML = `
-    <section class="block">
-      <h2>Upcoming Events</h2>
-      ${events.map(ev => `
-        <div class="card" data-event="${escapeHtml(ev['Event ID'])}" style="cursor:pointer;">
-          <span class="badge event">EVENT</span>
-          <div class="card-title" style="margin-top:6px;">${escapeHtml(ev['Event Name'])}</div>
-          <div class="meta">
-            <span>📅 ${fmtDate(ev['Start Date'])}${ev['End Date'] && ev['End Date'] !== ev['Start Date'] ? ' – ' + fmtDate(ev['End Date']) : ''}</span>
-            ${ev['Location'] ? `<span>📍 ${escapeHtml(ev['Location'])}</span>` : ''}
-          </div>
-          ${ev['Description'] ? `<div class="desc">${escapeHtml(ev['Description'])}</div>` : ''}
-          <div style="margin-top:10px;"><button class="btn btn-outline">View Seva Opportunities</button></div>
-        </div>
-      `).join('')}
-    </section>
-  `;
-  main.querySelectorAll('[data-event]').forEach(card => {
-    card.addEventListener('click', () => setTab('event', { eventId: card.dataset.event }));
+  main.innerHTML = `<section class="block"><h2>Upcoming Events</h2>${tableShell(['Event', 'Date', 'Location'], events.map(eventRow).join(''))}</section>`;
+  bindExpandableRows(main);
+  main.querySelectorAll('[data-view-event]').forEach(btn => {
+    btn.addEventListener('click', () => setTab('event', { eventId: btn.dataset.viewEvent }));
   });
 }
 
@@ -420,10 +588,11 @@ async function renderEventDetail(main, eventId) {
     </section>
     <section class="block">
       <h2>Available Seva</h2>
-      ${detail.sevaOpportunities.length ? detail.sevaOpportunities.map(sevaCard).join('') : '<div class="empty">No seva opportunities posted for this event yet.</div>'}
+      ${detail.sevaOpportunities.length ? tableShell(['Seva', 'When', 'Slots'], detail.sevaOpportunities.map(sevaRow).join('')) : '<div class="empty">No seva opportunities posted for this event yet.</div>'}
     </section>
   `;
   document.getElementById('back-events').addEventListener('click', () => setTab('events'));
+  bindExpandableRows(main);
   bindRegisterButtons();
 }
 
@@ -513,7 +682,7 @@ function renderIdentifyStep(body, sevaId, overlay) {
 function renderVerifyStep(body, sevaId, participantId, fullName, overlay) {
   body.innerHTML = `
     <p>Hi <strong>${escapeHtml(fullName)}</strong> — enter your mobile number to confirm it's you.</p>
-    <div class="field"><label>Mobile Number</label><input type="tel" id="verify-mobile" placeholder="Last 4 digits or full number"></div>
+    <div class="field"><label>Mobile Number</label><input type="tel" inputmode="numeric" id="verify-mobile" placeholder="Enter the 8 digit mobile number" maxlength="8"></div>
     <button class="btn btn-primary" id="verify-btn">Confirm &amp; Register</button>
     <div id="modal-msg"></div>
   `;
@@ -534,7 +703,7 @@ function renderVerifyStep(body, sevaId, participantId, fullName, overlay) {
 function renderNewParticipantStep(body, sevaId, overlay) {
   body.innerHTML = `
     <div class="field"><label>Full Name</label><input type="text" id="new-name" placeholder="Your full name"></div>
-    <div class="field"><label>Mobile Number</label><input type="tel" id="new-mobile" placeholder="10-digit mobile number"></div>
+    <div class="field"><label>Mobile Number</label><input type="tel" inputmode="numeric" id="new-mobile" placeholder="Enter the 8 digit mobile number" maxlength="8"></div>
     <div class="field"><label>Email (optional)</label><input type="email" id="new-email" placeholder="you@example.com"></div>
     <button class="btn btn-primary" id="new-submit">Register</button>
     <div id="modal-msg"></div>
@@ -552,6 +721,155 @@ function renderNewParticipantStep(body, sevaId, overlay) {
       bustCache();
       store.me = { participantId: result.participantId, fullName, mobile };
       body.querySelector('#modal-msg').innerHTML = `<div class="success-text">Welcome, ${escapeHtml(fullName)}! You're registered. 🙏</div>`;
+      setTimeout(() => { overlay.remove(); renderMain(); }, 1000);
+    } catch (e) {
+      body.querySelector('#modal-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`;
+    }
+  });
+}
+
+/* ---------------- Group register flow (Upcoming Seva tab only) ----------------
+   Mirrors the per-event register flow above (identify -> verify -> new
+   participant) but the target is a *group* -- a recurring pattern or a
+   standalone seva from getUpcomingSevaGrouped_ -- rather than a single
+   sevaId. A recurring group calls registerRecurring (auto-books the next
+   few dated occurrences); a standalone group calls the normal register /
+   registerParticipant actions against its one nextSevaId. Kept as its own
+   set of functions rather than reusing openRegisterModal/renderIdentifyStep
+   above so the per-event flow (still keyed by sevaId) is untouched. */
+function groupRegisterAction(group, isNewParticipant) {
+  if (group.isRecurring) return 'registerRecurring';
+  return isNewParticipant ? 'registerParticipant' : 'register';
+}
+function groupRegisterPayload(group, extra) {
+  return group.isRecurring
+    ? Object.assign({ patternId: group.recurringPatternId }, extra)
+    : Object.assign({ sevaId: group.nextSevaId }, extra);
+}
+function groupRegisterSuccessMsg(group, name, result) {
+  if (group.isRecurring && result && result.scheduledDates) {
+    const n = result.scheduledDates.length;
+    return `Welcome${name ? ', ' + escapeHtml(name) : ''}! You're booked for the next ${n} date${n === 1 ? '' : 's'}, starting ${fmtDate(result.scheduledDates[0])}. 🙏`;
+  }
+  return `You're registered! See you there. 🙏`;
+}
+
+function bindGroupRegisterButtons() {
+  document.querySelectorAll('[data-group-register]').forEach(btn => {
+    btn.addEventListener('click', () => openGroupRegisterModal(btn.dataset.groupRegister));
+  });
+}
+
+function openGroupRegisterModal(groupId) {
+  const group = (state.groupList || []).find(g => String(g.groupId) === String(groupId)) || {};
+  const me = store.me;
+  const overlay = openModal(`
+    <div class="sheet-head">
+      <h3>Register — ${escapeHtml(group.sevaName || 'Seva')}</h3>
+      <button class="close-x" id="modal-close">✕</button>
+    </div>
+    ${group.isRecurring ? `<p class="muted" style="padding:0 20px;">This books your next ${group.upcomingOccurrenceCount >= 4 ? 4 : group.upcomingOccurrenceCount} occurrences, starting ${fmtDate(group.nextDate)}.</p>` : ''}
+    <div id="modal-body"></div>
+  `);
+  overlay.querySelector('#modal-close').addEventListener('click', () => overlay.remove());
+  const body = overlay.querySelector('#modal-body');
+
+  if (me && me.participantId) {
+    body.innerHTML = `
+      <p>Registering as <strong>${escapeHtml(me.fullName)}</strong>.</p>
+      <button class="btn btn-primary" id="confirm-existing">Confirm Registration</button>
+      <button class="btn btn-ghost" id="not-me" style="margin-top:8px;">Not me — use a different profile</button>
+      <div id="modal-msg"></div>
+    `;
+    body.querySelector('#confirm-existing').addEventListener('click', async () => {
+      try {
+        const result = await api.post(groupRegisterAction(group, false), groupRegisterPayload(group, { participantId: me.participantId, mobile: me.mobile }));
+        bustCache();
+        body.querySelector('#modal-msg').innerHTML = `<div class="success-text">${groupRegisterSuccessMsg(group, null, result)}</div>`;
+        setTimeout(() => { overlay.remove(); renderMain(); }, 900);
+      } catch (e) {
+        body.querySelector('#modal-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`;
+      }
+    });
+    body.querySelector('#not-me').addEventListener('click', () => { store.clearMe(); renderGroupIdentifyStep(body, group, overlay); });
+  } else {
+    renderGroupIdentifyStep(body, group, overlay);
+  }
+}
+
+function renderGroupIdentifyStep(body, group, overlay) {
+  body.innerHTML = `
+    <div class="field">
+      <label>Search your name (if you've registered before)</label>
+      <input type="text" id="search-name" placeholder="Start typing your name…">
+      <div id="search-results"></div>
+    </div>
+    <p class="muted" style="text-align:center; margin:12px 0;">— or —</p>
+    <button class="btn btn-outline" id="first-time-btn">I'm registering for the first time</button>
+  `;
+  let searchTimer;
+  body.querySelector('#search-name').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    const q = e.target.value.trim();
+    const resultsEl = body.querySelector('#search-results');
+    if (q.length < 2) { resultsEl.innerHTML = ''; return; }
+    searchTimer = setTimeout(async () => {
+      const results = await api.get('searchParticipants', { q });
+      resultsEl.innerHTML = results.length ? `<div class="result-list">${results.map(r => `
+        <div class="result-item" data-pid="${escapeHtml(r['Participant ID'])}" data-name="${escapeHtml(r['Full Name'])}">
+          <div class="r-name">${escapeHtml(r['Full Name'])}</div>
+          <div class="r-mobile">Mobile ending ${escapeHtml(r['Mobile Masked'])}</div>
+        </div>`).join('')}</div>` : `<p class="muted" style="margin-top:6px;">No match. Try first-time registration below.</p>`;
+      resultsEl.querySelectorAll('.result-item').forEach(item => {
+        item.addEventListener('click', () => renderGroupVerifyStep(body, group, item.dataset.pid, item.dataset.name, overlay));
+      });
+    }, 180);
+  });
+  body.querySelector('#first-time-btn').addEventListener('click', () => renderGroupNewParticipantStep(body, group, overlay));
+}
+
+function renderGroupVerifyStep(body, group, participantId, fullName, overlay) {
+  body.innerHTML = `
+    <p>Hi <strong>${escapeHtml(fullName)}</strong> — enter your mobile number to confirm it's you.</p>
+    <div class="field"><label>Mobile Number</label><input type="tel" inputmode="numeric" id="verify-mobile" placeholder="Enter the 8 digit mobile number" maxlength="8"></div>
+    <button class="btn btn-primary" id="verify-btn">Confirm &amp; Register</button>
+    <div id="modal-msg"></div>
+  `;
+  body.querySelector('#verify-btn').addEventListener('click', async () => {
+    const mobile = body.querySelector('#verify-mobile').value.trim();
+    try {
+      const result = await api.post(groupRegisterAction(group, false), groupRegisterPayload(group, { participantId, mobile }));
+      bustCache();
+      store.me = { participantId, fullName, mobile };
+      body.querySelector('#modal-msg').innerHTML = `<div class="success-text">${groupRegisterSuccessMsg(group, fullName, result)}</div>`;
+      setTimeout(() => { overlay.remove(); renderMain(); }, 900);
+    } catch (e) {
+      body.querySelector('#modal-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`;
+    }
+  });
+}
+
+function renderGroupNewParticipantStep(body, group, overlay) {
+  body.innerHTML = `
+    <div class="field"><label>Full Name</label><input type="text" id="new-name" placeholder="Your full name"></div>
+    <div class="field"><label>Mobile Number</label><input type="tel" inputmode="numeric" id="new-mobile" placeholder="Enter the 8 digit mobile number" maxlength="8"></div>
+    <div class="field"><label>Email (optional)</label><input type="email" id="new-email" placeholder="you@example.com"></div>
+    <button class="btn btn-primary" id="new-submit">Register</button>
+    <div id="modal-msg"></div>
+  `;
+  body.querySelector('#new-submit').addEventListener('click', async () => {
+    const fullName = body.querySelector('#new-name').value.trim();
+    const mobile = body.querySelector('#new-mobile').value.trim();
+    const email = body.querySelector('#new-email').value.trim();
+    if (!fullName || !mobile) {
+      body.querySelector('#modal-msg').innerHTML = `<div class="error-text">Name and mobile number are required.</div>`;
+      return;
+    }
+    try {
+      const result = await api.post(groupRegisterAction(group, true), groupRegisterPayload(group, { fullName, mobile, email }));
+      bustCache();
+      store.me = { participantId: result.participantId, fullName, mobile };
+      body.querySelector('#modal-msg').innerHTML = `<div class="success-text">${groupRegisterSuccessMsg(group, fullName, result)}</div>`;
       setTimeout(() => { overlay.remove(); renderMain(); }, 1000);
     } catch (e) {
       body.querySelector('#modal-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`;
@@ -599,7 +917,7 @@ function renderMySevaVerify(main, participantId, fullName) {
     <section class="block">
       <h2>My Seva</h2>
       <p>Hi <strong>${escapeHtml(fullName)}</strong> — confirm your mobile number.</p>
-      <div class="field"><label>Mobile Number</label><input type="tel" id="ms-mobile"></div>
+      <div class="field"><label>Mobile Number</label><input type="tel" inputmode="numeric" id="ms-mobile" placeholder="Enter the 8 digit mobile number" maxlength="8"></div>
       <button class="btn btn-primary" id="ms-verify-btn">View My Seva</button>
       <div id="ms-msg"></div>
     </section>
@@ -619,19 +937,30 @@ function renderMySevaVerify(main, participantId, fullName) {
 async function loadMySevaDashboard(main, participantId, mobile) {
   main.innerHTML = skeletons(2);
   const data = await api.get('participantDashboard', { participantId, mobile });
-  const rows = (list) => list.length ? list.map(c => `
-    <div class="card">
-      <div class="card-title">${escapeHtml(c.sevaName)}</div>
-      <div class="meta">
-        <span>📅 ${fmtDate(c.date)}</span>
-        ${c.startTime ? `<span>⏰ ${fmtTime(c.startTime)}${c.endTime ? '–' + fmtTime(c.endTime) : ''}</span>` : ''}
-        ${c.location ? `<span>📍 ${escapeHtml(c.location)}</span>` : ''}
-        ${c.eventName ? `<span class="badge event">${escapeHtml(c.eventName)}</span>` : ''}
-      </div>
-      <div class="muted">Status: ${escapeHtml(c.status)}${c.attendance && c.attendance !== 'PENDING' ? ' · ' + escapeHtml(c.attendance) : ''}</div>
-      ${c.status === 'CONFIRMED' ? `<button class="btn btn-danger small" style="margin-top:10px;" data-cancel="${escapeHtml(c.registrationId)}">Cancel</button>` : ''}
-    </div>
-  `).join('') : '<div class="empty" style="padding:20px;">Nothing here yet.</div>';
+  // Participants get NO cancel option here by design -- only Change Date,
+  // and only when the seva was generated from a recurring pattern (so
+  // there's a well-defined set of alternate dates to move to). Cancelling
+  // or moving to an unrelated seva stays admin/super-admin only.
+  const msRow = (c, isUpcoming) => {
+    const timeText = c.startTime ? `${fmtTime(c.startTime)}${c.endTime ? '–' + fmtTime(c.endTime) : ''}` : '';
+    const canReschedule = isUpcoming && c.status === 'CONFIRMED' && c.recurringPatternId;
+    return `
+      <tr class="row-summary" data-ms-row="${escapeHtml(c.registrationId)}">
+        <td class="name-cell"><span class="row-chevron">▸</span>${escapeHtml(c.sevaName)}</td>
+        <td>${fmtDate(c.date)}${timeText ? `<span class="sub">${timeText}</span>` : ''}</td>
+        <td>${escapeHtml(c.status)}${c.attendance && c.attendance !== 'PENDING' ? `<span class="sub">${escapeHtml(c.attendance)}</span>` : ''}</td>
+      </tr>
+      <tr class="row-detail hidden"><td colspan="3">
+        ${c.location ? `<div class="muted" style="margin:8px 0 4px;">📍 ${escapeHtml(c.location)}</div>` : ''}
+        ${c.eventName ? `<div class="muted" style="margin:4px 0;">Event: ${escapeHtml(c.eventName)}</div>` : ''}
+        ${canReschedule ? `<button class="btn btn-outline small" style="margin-top:8px;" data-reschedule="${escapeHtml(c.registrationId)}" data-pattern="${escapeHtml(c.recurringPatternId)}" data-seva="${escapeHtml(c.sevaId)}">Change Date</button>` : ''}
+        ${isUpcoming && c.status === 'CONFIRMED' && !c.recurringPatternId ? `<p class="muted" style="margin-top:8px;">Need to change or cancel this? Please contact the seva coordinator.</p>` : ''}
+      </td></tr>
+    `;
+  };
+  const rows = (list, isUpcoming) => list.length
+    ? tableShell(['Seva', 'Date', 'Status'], list.map(c => msRow(c, isUpcoming)).join(''))
+    : '<div class="empty" style="padding:20px;">Nothing here yet.</div>';
 
   main.innerHTML = `
     <section class="block">
@@ -643,22 +972,83 @@ async function loadMySevaDashboard(main, participantId, mobile) {
     </section>
     <section class="block">
       <h2>Upcoming Seva</h2>
-      ${rows(data.upcoming)}
+      ${rows(data.upcoming, true)}
     </section>
-    ${data.past.length ? `<section class="block"><h2>Past Seva</h2>${rows(data.past)}</section>` : ''}
+    ${data.past.length ? `<section class="block"><h2>Past Seva</h2>${rows(data.past, false)}</section>` : ''}
   `;
+  bindExpandableRows(main);
   document.getElementById('switch-profile').addEventListener('click', () => { store.clearMe(); setTab('myseva'); });
-  main.querySelectorAll('[data-cancel]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('Cancel this seva registration?')) return;
-      try {
-        await api.post('cancelRegistration', { registrationId: btn.dataset.cancel, participantId, mobile });
-        bustCache();
-        toast('Registration cancelled.');
-        loadMySevaDashboard(main, participantId, mobile);
-      } catch (e) { toast(e.message); }
-    });
+  main.querySelectorAll('[data-reschedule]').forEach(btn => {
+    btn.addEventListener('click', () => openRescheduleModal({
+      registrationId: btn.dataset.reschedule,
+      patternId: btn.dataset.pattern,
+      currentSevaId: btn.dataset.seva,
+      mobile, participantId, main
+    }));
   });
+}
+
+/* ---------------- Change Date (reschedule) modal ---------------- */
+function openRescheduleModal(ctx) {
+  const overlay = openModal(`
+    <div class="sheet-head">
+      <h3>Change Date</h3>
+      <button class="close-x" id="modal-close">✕</button>
+    </div>
+    <div id="modal-body"><div class="spinner"></div></div>
+  `);
+  overlay.querySelector('#modal-close').addEventListener('click', () => overlay.remove());
+  const body = overlay.querySelector('#modal-body');
+
+  (async () => {
+    let dates;
+    try {
+      dates = await api.get('patternUpcomingDates', { patternId: ctx.patternId, excludeSevaId: ctx.currentSevaId });
+    } catch (e) {
+      body.innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`;
+      return;
+    }
+    if (!dates.length) {
+      body.innerHTML = `<p class="muted">No other upcoming dates are scheduled for this seva yet. Please check back later.</p>`;
+      return;
+    }
+    let selectedSevaId = null;
+    body.innerHTML = `
+      <p class="muted" style="margin-bottom:8px;">Pick a new date for this seva.</p>
+      <div class="result-list" id="date-options">
+        ${dates.map(d => {
+          const timeText = d['Start Time'] ? `${fmtTime(d['Start Time'])}${d['End Time'] ? '–' + fmtTime(d['End Time']) : ''}` : '';
+          return `
+            <div class="result-item" data-seva-option="${escapeHtml(d['Seva ID'])}" ${d.IsFull ? 'data-full="1"' : ''}>
+              <div class="r-name">${escapeHtml(fmtDate(d['Date']))}${timeText ? ' · ' + escapeHtml(timeText) : ''}</div>
+              <div class="r-mobile">${d.IsFull ? 'Full — waitlist only' : (d.RemainingSlots != null ? d.RemainingSlots + ' slots remaining' : 'Open')}</div>
+            </div>`;
+        }).join('')}
+      </div>
+      <button class="btn btn-primary" id="reschedule-submit" style="margin-top:12px;" disabled>Confirm New Date</button>
+      <div id="modal-msg"></div>
+    `;
+    const submitBtn = body.querySelector('#reschedule-submit');
+    body.querySelectorAll('[data-seva-option]').forEach(item => {
+      item.addEventListener('click', () => {
+        body.querySelectorAll('[data-seva-option]').forEach(o => o.classList.remove('selected'));
+        item.classList.add('selected');
+        selectedSevaId = item.dataset.sevaOption;
+        submitBtn.disabled = false;
+      });
+    });
+    submitBtn.addEventListener('click', async () => {
+      if (!selectedSevaId) return;
+      try {
+        await api.post('rescheduleRegistration', { registrationId: ctx.registrationId, mobile: ctx.mobile, newSevaId: selectedSevaId });
+        bustCache();
+        body.querySelector('#modal-msg').innerHTML = `<div class="success-text">Date changed! 🙏</div>`;
+        setTimeout(() => { overlay.remove(); loadMySevaDashboard(ctx.main, ctx.participantId, ctx.mobile); }, 900);
+      } catch (e) {
+        body.querySelector('#modal-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`;
+      }
+    });
+  })();
 }
 
 /* ---------------- Admin ---------------- */
@@ -775,7 +1165,7 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
         const overlay = openModal(`
           <div class="sheet-head"><h3>Add Participant</h3><button class="close-x" id="modal-close">✕</button></div>
           <div class="field"><label>Full Name</label><input id="ap-name"></div>
-          <div class="field"><label>Mobile</label><input id="ap-mobile" type="tel"></div>
+          <div class="field"><label>Mobile</label><input id="ap-mobile" type="tel" inputmode="numeric" placeholder="Enter the 8 digit mobile number" maxlength="8"></div>
           <button class="btn btn-primary" id="ap-submit">Add</button>
           <div id="ap-msg"></div>
         `);
@@ -1258,9 +1648,8 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
 
 function fmtInputDate(d) {
   if (!d) return '';
-  const dt = new Date(d);
-  if (isNaN(dt)) return '';
-  return dt.toISOString().slice(0, 10);
+  const m = String(d).match(/^(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : '';
 }
 
 /* ---------------- Boot ---------------- */
