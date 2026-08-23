@@ -5,17 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Temple Seva Registration</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Mukta:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Mukta:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
    DESIGN TOKENS
    Palette grounded in temple materials: marigold garlands (primary),
-   sindoor/kumkum red (accent), sandalwood paste (background), and
-   brass/bell bronze for muted metal tones. Display face Baloo 2 +
-   body face Mukta -- both widely used in Indian consumer/devotional
-   apps, read as warm and legible rather than generic AI-serif.
-   Signature element: the "garland divider" -- a strung marigold
-   motif used between sections instead of a plain hairline rule.
+   sindoor/kumkum red (accent), sandalwood paste (background). Display
+   face Baloo 2 + body face Mukta -- both common in Indian consumer
+   apps, warm and legible. Only 5 font weights loaded (trimmed from 8)
+   for a faster first paint. Signature element: the "garland divider"
+   -- a strung-marigold motif used once, under the header.
    ============================================================ */
 :root{
   --bg: #FBF5E8;
@@ -51,28 +51,27 @@ a{color:var(--primary-dark);}
 img{max-width:100%;}
 @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} }
 
-/* ---- Garland divider (signature element) ---- */
+/* ---- Garland divider (signature element, used once) ---- */
 .garland{
-  height:16px; width:100%;
+  height:14px; width:100%;
   background:
-    radial-gradient(circle at 8px 6px, var(--primary) 5px, transparent 5.6px) 0 0/24px 16px repeat-x,
-    radial-gradient(circle at 20px 10px, var(--accent) 4px, transparent 4.6px) 0 0/24px 16px repeat-x;
-  opacity:0.9;
+    radial-gradient(circle at 8px 6px, var(--primary) 4.5px, transparent 5px) 0 0/24px 14px repeat-x,
+    radial-gradient(circle at 20px 9px, var(--accent) 3.5px, transparent 4px) 0 0/24px 14px repeat-x;
 }
 
 /* ---- Layout shell ---- */
 .app{max-width:640px; margin:0 auto; min-height:100vh; background:var(--bg); position:relative;}
 header.top{
   background:linear-gradient(180deg, var(--accent) 0%, #611730 100%);
-  color:#fff; padding:22px 20px 26px; position:relative; overflow:hidden;
+  color:#fff; padding:20px 20px 24px;
 }
-header.top .eyebrow{font-size:13px; letter-spacing:.08em; text-transform:uppercase; opacity:.85; font-weight:600;}
-header.top h1{font-size:30px; color:#fff; margin-top:2px;}
-header.top p.tag{margin:6px 0 0; opacity:.9; font-size:15px;}
+header.top .eyebrow{font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; opacity:.85; font-weight:600;}
+header.top h1{font-size:28px; color:#fff; margin-top:2px;}
+header.top p.tag{margin:6px 0 0; opacity:.9; font-size:14.5px;}
 nav.tabs{
   display:flex; gap:6px; padding:10px 12px; background:var(--surface);
   position:sticky; top:0; z-index:20; border-bottom:1px solid var(--line);
-  overflow-x:auto;
+  overflow-x:auto; -webkit-overflow-scrolling:touch;
 }
 nav.tabs button{
   border:none; background:transparent; padding:9px 14px; border-radius:999px;
@@ -80,37 +79,36 @@ nav.tabs button{
   white-space:nowrap; cursor:pointer;
 }
 nav.tabs button.active{background:var(--primary); color:#fff;}
-main{padding:18px 16px 90px;}
-section.block{margin-bottom:26px;}
-section.block h2{font-size:20px; margin-bottom:10px;}
+main{padding:16px 16px 90px;}
+section.block{margin-bottom:22px;}
+section.block h2{font-size:19px; margin-bottom:10px;}
 .muted{color:var(--ink-soft); font-size:14px;}
 
 /* ---- Cards ---- */
 .card{
   background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
-  padding:16px; margin-bottom:14px; border:1px solid var(--line); position:relative;
+  padding:15px; margin-bottom:12px; border:1px solid var(--line); position:relative;
 }
-.card .card-title{font-family:var(--font-display); font-size:18px; font-weight:700;}
-.card .meta{display:flex; flex-wrap:wrap; gap:10px; margin:8px 0; font-size:14px; color:var(--ink-soft);}
-.card .meta span{display:inline-flex; align-items:center; gap:5px;}
-.card .desc{font-size:14px; color:var(--ink-soft); margin:8px 0;}
-.slotbar{height:8px; border-radius:99px; background:var(--line); overflow:hidden; margin:10px 0 4px;}
+.card .card-title{font-family:var(--font-display); font-size:17px; font-weight:700;}
+.card .meta{display:flex; flex-wrap:wrap; gap:9px; margin:7px 0; font-size:13.5px; color:var(--ink-soft);}
+.card .meta span{display:inline-flex; align-items:center; gap:4px;}
+.card .desc{font-size:13.5px; color:var(--ink-soft); margin:7px 0;}
+.slotbar{height:7px; border-radius:99px; background:var(--line); overflow:hidden; margin:9px 0 4px;}
 .slotbar .fill{height:100%; background:var(--primary); border-radius:99px;}
-.slot-text{font-size:13px; font-weight:600;}
+.slot-text{font-size:12.5px; font-weight:600;}
 .slot-text.full{color:var(--danger);}
 .slot-text.ok{color:var(--success);}
-.badge{
-  display:inline-block; font-size:12px; font-weight:700; padding:3px 10px; border-radius:99px;
-}
+.badge{display:inline-block; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:99px;}
 .badge.full{background:var(--danger-soft); color:var(--danger);}
 .badge.open{background:var(--success-soft); color:var(--success);}
 .badge.event{background:var(--accent-soft); color:var(--accent);}
+.badge.recur{background:var(--primary-soft); color:var(--primary-dark);}
 
 /* ---- Buttons & forms ---- */
 .btn{
   display:inline-flex; align-items:center; justify-content:center; gap:6px;
-  border:none; border-radius:12px; padding:13px 18px; font-family:var(--font-display);
-  font-weight:700; font-size:15px; cursor:pointer; width:100%;
+  border:none; border-radius:12px; padding:12px 16px; font-family:var(--font-display);
+  font-weight:700; font-size:14.5px; cursor:pointer; width:100%;
 }
 .btn-primary{background:var(--primary); color:#fff;}
 .btn-primary:active{background:var(--primary-dark);}
@@ -118,81 +116,95 @@ section.block h2{font-size:20px; margin-bottom:10px;}
 .btn-ghost{background:var(--surface-warm); color:var(--ink); border:1px solid var(--line);}
 .btn-danger{background:var(--danger-soft); color:var(--danger);}
 .btn[disabled]{opacity:.5; cursor:not-allowed;}
-.btn.small{width:auto; padding:9px 14px; font-size:13px;}
-.field{margin-bottom:14px;}
-.field label{display:block; font-size:13px; font-weight:600; color:var(--ink-soft); margin-bottom:6px;}
+.btn.small{width:auto; padding:8px 13px; font-size:13px;}
+.field{margin-bottom:12px;}
+.field label{display:block; font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-bottom:5px;}
 .field input, .field select, .field textarea{
-  width:100%; padding:12px 14px; border-radius:10px; border:1.5px solid var(--line);
+  width:100%; padding:11px 13px; border-radius:10px; border:1.5px solid var(--line);
   font-family:var(--font-body); font-size:16px; background:#fff; color:var(--ink);
 }
 .field input:focus, .field select:focus, .field textarea:focus{outline:2px solid var(--primary); outline-offset:1px; border-color:var(--primary);}
-.helper{font-size:12.5px; color:var(--ink-soft); margin-top:5px;}
+.helper{font-size:12px; color:var(--ink-soft); margin-top:5px;}
 .error-text{font-size:13px; color:var(--danger); margin-top:8px; font-weight:600;}
 .success-text{font-size:13px; color:var(--success); margin-top:8px; font-weight:600;}
+.row-2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
 
 /* ---- Modal / sheet ---- */
-.overlay{
-  position:fixed; inset:0; background:rgba(43,33,24,0.45); z-index:50;
-  display:flex; align-items:flex-end; justify-content:center;
-}
-.sheet{
-  background:var(--bg); width:100%; max-width:640px; border-radius:20px 20px 0 0;
-  max-height:88vh; overflow-y:auto; padding:20px 18px 28px; animation:up .18s ease-out;
-}
-@keyframes up{from{transform:translateY(24px); opacity:0;} to{transform:translateY(0); opacity:1;}}
-.sheet-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
-.sheet-head h3{font-size:19px;}
-.close-x{background:var(--surface-warm); border:none; border-radius:99px; width:32px; height:32px; font-size:16px; cursor:pointer; color:var(--ink-soft);}
+.overlay{position:fixed; inset:0; background:rgba(43,33,24,0.45); z-index:50; display:flex; align-items:flex-end; justify-content:center;}
+.sheet{background:var(--bg); width:100%; max-width:640px; border-radius:18px 18px 0 0; max-height:88vh; overflow-y:auto; padding:18px 16px 26px; animation:up .13s ease-out;}
+@keyframes up{from{transform:translateY(16px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+.sheet-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
+.sheet-head h3{font-size:18px;}
+.close-x{background:var(--surface-warm); border:none; border-radius:99px; width:30px; height:30px; font-size:15px; cursor:pointer; color:var(--ink-soft);}
 
 /* ---- Search dropdown ---- */
 .result-list{border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-top:6px; background:#fff;}
-.result-item{padding:12px 14px; border-bottom:1px solid var(--line); cursor:pointer; font-size:14.5px;}
+.result-item{padding:11px 13px; border-bottom:1px solid var(--line); cursor:pointer; font-size:14px;}
 .result-item:last-child{border-bottom:none;}
 .result-item:active{background:var(--surface-warm);}
 .result-item .r-name{font-weight:600;}
-.result-item .r-mobile{color:var(--ink-soft); font-size:13px;}
+.result-item .r-mobile{color:var(--ink-soft); font-size:12.5px;}
 
 /* ---- Empty state ---- */
-.empty{text-align:center; padding:40px 16px; color:var(--ink-soft);}
-.empty .glyph{font-size:34px; margin-bottom:8px;}
+.empty{text-align:center; padding:36px 16px; color:var(--ink-soft);}
+.empty .glyph{font-size:32px; margin-bottom:8px;}
 
 /* ---- Admin ---- */
-.pin-box{max-width:340px; margin:60px auto; text-align:center;}
-.stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
-.stat{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px; text-align:center;}
-.stat .num{font-family:var(--font-display); font-size:26px; font-weight:800; color:var(--primary-dark);}
-.stat .lbl{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
-table.simple{width:100%; border-collapse:collapse; font-size:13.5px;}
-table.simple th, table.simple td{text-align:left; padding:8px 6px; border-bottom:1px solid var(--line);}
-table.simple th{color:var(--ink-soft); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.03em;}
+.pin-box{max-width:320px; margin:56px auto; text-align:center;}
+.stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:9px;}
+.stat{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:13px; text-align:center;}
+.stat .num{font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--primary-dark);}
+.stat .lbl{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+table.simple{width:100%; border-collapse:collapse; font-size:13px;}
+table.simple th, table.simple td{text-align:left; padding:7px 5px; border-bottom:1px solid var(--line);}
+table.simple th{color:var(--ink-soft); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:.03em;}
 .reg-row{display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--line); gap:8px;}
 .reg-row:last-child{border-bottom:none;}
 .reg-row .who{font-size:14px;}
-.reg-row .who .m{color:var(--ink-soft); font-size:12.5px;}
-.pill-toggle{display:flex; gap:6px; margin-bottom:16px;}
-.pill-toggle button{flex:1;}
+.reg-row .who .m{color:var(--ink-soft); font-size:12px;}
+.pill-toggle{display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+.pill-toggle .btn{width:auto; white-space:nowrap;}
+.tag-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
 
 .toast{
-  position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:80;
-  background:var(--ink); color:#fff; padding:12px 18px; border-radius:12px; font-size:14px;
+  position:fixed; bottom:16px; left:50%; transform:translateX(-50%); z-index:80;
+  background:var(--ink); color:#fff; padding:11px 17px; border-radius:12px; font-size:13.5px;
   max-width:90%; text-align:center; box-shadow:var(--shadow);
 }
-.spinner{width:22px; height:22px; border:3px solid var(--primary-soft); border-top-color:var(--primary); border-radius:50%; animation:spin .7s linear infinite; margin:20px auto;}
+.spinner{width:20px; height:20px; border:3px solid var(--primary-soft); border-top-color:var(--primary); border-radius:50%; animation:spin .6s linear infinite; margin:18px auto;}
 @keyframes spin{to{transform:rotate(360deg);}}
+.skeleton{background:linear-gradient(90deg, var(--surface-warm) 25%, var(--line) 37%, var(--surface-warm) 63%); background-size:400% 100%; animation:sk 1.2s ease infinite; border-radius:var(--radius); height:96px; margin-bottom:12px;}
+@keyframes sk{0%{background-position:100% 0;} 100%{background-position:0 0;}}
 </style>
 </head>
 <body>
-<div class="app" id="app"></div>
+<div class="app" id="app">
+  <header class="top">
+    <div class="eyebrow" id="hdr-eyebrow">Temple Seva</div>
+    <h1 id="hdr-title">Temple Seva</h1>
+    <p class="tag" id="hdr-tag">Serve with devotion. Participate in seva.</p>
+  </header>
+  <div class="garland"></div>
+  <nav class="tabs" id="nav-tabs">
+    <button data-tab="home">Upcoming Seva</button>
+    <button data-tab="events">Events</button>
+    <button data-tab="myseva">My Seva</button>
+    <button data-tab="admin">Admin</button>
+  </nav>
+  <main id="main"></main>
+</div>
 
 <script>
 /* ============================================================
    CONFIG -- paste your Apps Script Web App URL here after deploying
    ============================================================ */
 const CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbx5Y5s07yA1ZLuxm8b2NsQtpKsAYOT8HuRNBVPBV0FzELdVzTYNKgXErb71aNBCpBb8/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbxONGMsHwUypS-ucqRD_6i2FgyueKlvvuyYVW2fk70fkfgRRW4BQ-iS8KbE11yH1aU_/exec',
   TEMPLE_NAME: 'Temple Seva',
   TAGLINE: 'Serve with devotion. Participate in seva.'
 };
+document.getElementById('hdr-eyebrow').textContent = CONFIG.TEMPLE_NAME;
+document.getElementById('hdr-tag').textContent = CONFIG.TAGLINE;
 
 /* ---------------- API layer ---------------- */
 const api = {
@@ -215,7 +227,22 @@ const api = {
   }
 };
 
-/* ---------------- Tiny state / storage ---------------- */
+/* ---------------- Lightweight response cache ----------------
+   Tab switches and re-visits read from cache instantly (no spinner,
+   no round trip) instead of re-fetching every time. Any write
+   operation busts the whole cache since seva/events/registrations
+   are all cross-referenced. */
+const cache = new Map();
+async function cachedGet(key, fetcher, ttlMs = 20000) {
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.ts < ttlMs) return hit.data;
+  const data = await fetcher();
+  cache.set(key, { ts: Date.now(), data });
+  return data;
+}
+function bustCache() { cache.clear(); }
+
+/* ---------------- Storage ---------------- */
 const store = {
   get me() { try { return JSON.parse(localStorage.getItem('seva_me') || 'null'); } catch (e) { return null; } },
   set me(v) { localStorage.setItem('seva_me', JSON.stringify(v)); },
@@ -225,13 +252,13 @@ const store = {
   clearAdmin() { sessionStorage.removeItem('seva_admin'); }
 };
 
-let state = { tab: 'home', route: {}, sevaList: [], events: [] };
+let state = { tab: 'home', route: {}, sevaList: [] };
 
 function toast(msg) {
   const el = document.createElement('div');
   el.className = 'toast'; el.textContent = msg;
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 2600);
+  setTimeout(() => el.remove(), 2400);
 }
 
 function fmtDate(d) {
@@ -240,35 +267,55 @@ function fmtDate(d) {
   if (isNaN(dt)) return d;
   return dt.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 }
-
-// Defense-in-depth: the backend now normalizes Start Time/End Time to
-// "HH:mm" strings, but if a raw spreadsheet time value (which serializes to
-// something like "1899-12-30T09:00:00.000Z") ever slips through, extract
-// just the time portion instead of showing that whole timestamp.
+// Google Sheets stores time-only cells as a Date on 1899-12-30, which the API
+// serializes as e.g. "1899-12-30T15:30:00.000Z". This turns that (or a plain
+// "HH:MM") into a friendly "3:30 PM" for display.
 function fmtTime(t) {
   if (!t) return '';
-  const str = String(t);
-  const isoMatch = str.match(/T(\d{2}):(\d{2})/);
+  const s = String(t);
+  let hours, minutes;
+  const isoMatch = s.match(/T(\d{2}):(\d{2})/);
+  const plainMatch = s.match(/^(\d{1,2}):(\d{2})/);
   if (isoMatch) {
-    const hour = Number(isoMatch[1]), min = isoMatch[2];
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const h12 = hour % 12 === 0 ? 12 : hour % 12;
-    return `${h12}:${min} ${period}`;
+    // Time-only cells come back in UTC; read the UTC hour/minute directly
+    // rather than converting to the browser's local timezone.
+    hours = Number(isoMatch[1]); minutes = isoMatch[2];
+  } else if (plainMatch) {
+    hours = Number(plainMatch[1]); minutes = plainMatch[2];
+  } else {
+    return s;
   }
-  return str;
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const h12 = hours % 12 === 0 ? 12 : hours % 12;
+  return `${h12}:${minutes} ${period}`;
 }
+// Formats a time value into "HH:MM" (24-hour) for pre-filling <input type="time">.
+function fmtTimeInput(t) {
+  if (!t) return '';
+  const s = String(t);
+  const isoMatch = s.match(/T(\d{2}):(\d{2})/);
+  if (isoMatch) return `${isoMatch[1]}:${isoMatch[2]}`;
+  const plainMatch = s.match(/^(\d{1,2}):(\d{2})/);
+  if (plainMatch) return `${plainMatch[1].padStart(2, '0')}:${plainMatch[2]}`;
+  return '';
+}
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+const skeletons = (n) => Array(n).fill('<div class="skeleton"></div>').join('');
 
-/* ---------------- Router / render ---------------- */
+/* ---------------- Router: persistent shell, main-only re-render ----------------
+   The header/nav are built once in the static HTML above and never touched
+   again -- only #main is re-rendered on tab changes. This is what makes tab
+   switching feel instant instead of re-painting the whole page each time. */
 function setTab(tab, route) {
   state.tab = tab; state.route = route || {};
-  render();
+  document.querySelectorAll('#nav-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  renderMain();
 }
 
-async function render() {
-  const app = document.getElementById('app');
-  app.innerHTML = shell();
+async function renderMain() {
   const main = document.getElementById('main');
-  main.innerHTML = '<div class="spinner"></div>';
   try {
     if (state.tab === 'home') await renderHome(main);
     else if (state.tab === 'events') await renderEvents(main);
@@ -278,36 +325,12 @@ async function render() {
   } catch (e) {
     main.innerHTML = `<div class="empty"><div class="glyph">⚠️</div><p>${escapeHtml(e.message)}</p></div>`;
   }
-  bindNav();
 }
 
-function shell() {
-  return `
-    <header class="top">
-      <div class="eyebrow">${escapeHtml(CONFIG.TEMPLE_NAME)}</div>
-      <h1>Temple Seva</h1>
-      <p class="tag">${escapeHtml(CONFIG.TAGLINE)}</p>
-    </header>
-    <div class="garland"></div>
-    <nav class="tabs">
-      <button data-tab="home" class="${state.tab === 'home' ? 'active' : ''}">Upcoming Seva</button>
-      <button data-tab="events" class="${state.tab === 'events' ? 'active' : ''}">Events</button>
-      <button data-tab="myseva" class="${state.tab === 'myseva' ? 'active' : ''}">My Seva</button>
-      <button data-tab="admin" class="${state.tab === 'admin' ? 'active' : ''}">Admin</button>
-    </nav>
-    <main id="main"></main>
-  `;
-}
-
-function bindNav() {
-  document.querySelectorAll('nav.tabs button').forEach(btn => {
-    btn.addEventListener('click', () => setTab(btn.dataset.tab));
-  });
-}
-
-function escapeHtml(s) {
-  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
+document.getElementById('nav-tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-tab]');
+  if (btn) setTab(btn.dataset.tab);
+});
 
 /* ---------------- Seva card ---------------- */
 function sevaCard(s) {
@@ -323,15 +346,16 @@ function sevaCard(s) {
       </div>
       <div class="meta">
         <span>📅 ${fmtDate(s['Date'])}</span>
-        <span>⏰ ${escapeHtml(fmtTime(s['Start Time']))}${s['End Time'] ? '–' + escapeHtml(fmtTime(s['End Time'])) : ''}</span>
+        <span>⏰ ${fmtTime(s['Start Time'])}${s['End Time'] ? '–' + fmtTime(s['End Time']) : ''}</span>
         ${s['Location'] ? `<span>📍 ${escapeHtml(s['Location'])}</span>` : ''}
+        ${s['Recurring Pattern ID'] ? `<span class="badge recur">RECURRING</span>` : ''}
       </div>
       ${s['Instructions'] ? `<div class="desc">${escapeHtml(s['Instructions'])}</div>` : ''}
       ${max > 0 ? `
         <div class="slotbar"><div class="fill" style="width:${pct}%"></div></div>
         <div class="slot-text ${full ? 'full' : 'ok'}">${count} / ${max} volunteers${full ? '' : ' &middot; ' + (max - count) + ' slots remaining'}</div>
       ` : `<div class="slot-text ok">${count} registered</div>`}
-      <div style="margin-top:12px;">
+      <div style="margin-top:11px;">
         <button class="btn ${full ? 'btn-ghost' : 'btn-primary'}" ${full ? 'disabled' : ''} data-register="${escapeHtml(s['Seva ID'])}">
           ${full ? 'Full — Join Waitlist' : 'Register for Seva'}
         </button>
@@ -342,24 +366,21 @@ function sevaCard(s) {
 
 /* ---------------- Home ---------------- */
 async function renderHome(main) {
-  const seva = await api.get('upcomingSeva');
+  if (!cache.has('upcomingSeva')) main.innerHTML = skeletons(3);
+  const seva = await cachedGet('upcomingSeva', () => api.get('upcomingSeva'));
   state.sevaList = seva;
   if (!seva.length) {
     main.innerHTML = `<div class="empty"><div class="glyph">🪔</div><p>No seva opportunities open right now. Please check back soon.</p></div>`;
     return;
   }
-  main.innerHTML = `
-    <section class="block">
-      <h2>Upcoming Seva</h2>
-      ${seva.map(sevaCard).join('')}
-    </section>
-  `;
+  main.innerHTML = `<section class="block"><h2>Upcoming Seva</h2>${seva.map(sevaCard).join('')}</section>`;
   bindRegisterButtons();
 }
 
 /* ---------------- Events ---------------- */
 async function renderEvents(main) {
-  const events = await api.get('eventList');
+  if (!cache.has('eventList')) main.innerHTML = skeletons(2);
+  const events = await cachedGet('eventList', () => api.get('eventList'));
   if (!events.length) {
     main.innerHTML = `<div class="empty"><div class="glyph">🎉</div><p>No upcoming events scheduled.</p></div>`;
     return;
@@ -381,23 +402,23 @@ async function renderEvents(main) {
       `).join('')}
     </section>
   `;
-  document.querySelectorAll('[data-event]').forEach(card => {
+  main.querySelectorAll('[data-event]').forEach(card => {
     card.addEventListener('click', () => setTab('event', { eventId: card.dataset.event }));
   });
 }
 
 async function renderEventDetail(main, eventId) {
-  const detail = await api.get('eventDetail', { eventId });
+  main.innerHTML = skeletons(2);
+  const detail = await cachedGet('eventDetail:' + eventId, () => api.get('eventDetail', { eventId }));
   const ev = detail.event;
   main.innerHTML = `
-    <button class="btn btn-ghost small" id="back-events" style="margin-bottom:14px;">← All events</button>
+    <button class="btn btn-ghost small" id="back-events" style="margin-bottom:12px;">← All events</button>
     <section class="block">
       <h2>${escapeHtml(ev['Event Name'])}</h2>
       <p class="muted">${fmtDate(ev['Start Date'])}${ev['Location'] ? ' · ' + escapeHtml(ev['Location']) : ''}</p>
       ${ev['Description'] ? `<p class="desc">${escapeHtml(ev['Description'])}</p>` : ''}
     </section>
-    <div class="garland"></div>
-    <section class="block" style="margin-top:18px;">
+    <section class="block">
       <h2>Available Seva</h2>
       ${detail.sevaOpportunities.length ? detail.sevaOpportunities.map(sevaCard).join('') : '<div class="empty">No seva opportunities posted for this event yet.</div>'}
     </section>
@@ -445,8 +466,9 @@ function openRegisterModal(sevaId) {
     body.querySelector('#confirm-existing').addEventListener('click', async () => {
       try {
         await api.post('register', { participantId: me.participantId, mobile: me.mobile, sevaId });
+        bustCache();
         body.querySelector('#modal-msg').innerHTML = `<div class="success-text">You're registered! See you there. 🙏</div>`;
-        setTimeout(() => { overlay.remove(); render(); }, 1100);
+        setTimeout(() => { overlay.remove(); renderMain(); }, 900);
       } catch (e) {
         body.querySelector('#modal-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`;
       }
@@ -464,7 +486,7 @@ function renderIdentifyStep(body, sevaId, overlay) {
       <input type="text" id="search-name" placeholder="Start typing your name…">
       <div id="search-results"></div>
     </div>
-    <p class="muted" style="text-align:center; margin:14px 0;">— or —</p>
+    <p class="muted" style="text-align:center; margin:12px 0;">— or —</p>
     <button class="btn btn-outline" id="first-time-btn">I'm registering for the first time</button>
   `;
   let searchTimer;
@@ -483,7 +505,7 @@ function renderIdentifyStep(body, sevaId, overlay) {
       resultsEl.querySelectorAll('.result-item').forEach(item => {
         item.addEventListener('click', () => renderVerifyStep(body, sevaId, item.dataset.pid, item.dataset.name, overlay));
       });
-    }, 300);
+    }, 180);
   });
   body.querySelector('#first-time-btn').addEventListener('click', () => renderNewParticipantStep(body, sevaId, overlay));
 }
@@ -499,9 +521,10 @@ function renderVerifyStep(body, sevaId, participantId, fullName, overlay) {
     const mobile = body.querySelector('#verify-mobile').value.trim();
     try {
       await api.post('register', { participantId, mobile, sevaId });
+      bustCache();
       store.me = { participantId, fullName, mobile };
       body.querySelector('#modal-msg').innerHTML = `<div class="success-text">You're registered! See you there. 🙏</div>`;
-      setTimeout(() => { overlay.remove(); render(); }, 1100);
+      setTimeout(() => { overlay.remove(); renderMain(); }, 900);
     } catch (e) {
       body.querySelector('#modal-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`;
     }
@@ -526,9 +549,10 @@ function renderNewParticipantStep(body, sevaId, overlay) {
     }
     try {
       const result = await api.post('registerParticipant', { fullName, mobile, email, sevaId });
+      bustCache();
       store.me = { participantId: result.participantId, fullName, mobile };
       body.querySelector('#modal-msg').innerHTML = `<div class="success-text">Welcome, ${escapeHtml(fullName)}! You're registered. 🙏</div>`;
-      setTimeout(() => { overlay.remove(); render(); }, 1200);
+      setTimeout(() => { overlay.remove(); renderMain(); }, 1000);
     } catch (e) {
       body.querySelector('#modal-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`;
     }
@@ -563,7 +587,7 @@ async function renderMySeva(main) {
         el.querySelectorAll('.result-item').forEach(item => {
           item.addEventListener('click', () => renderMySevaVerify(main, item.dataset.pid, item.dataset.name));
         });
-      }, 300);
+      }, 180);
     });
     return;
   }
@@ -593,14 +617,14 @@ function renderMySevaVerify(main, participantId, fullName) {
 }
 
 async function loadMySevaDashboard(main, participantId, mobile) {
-  main.innerHTML = '<div class="spinner"></div>';
+  main.innerHTML = skeletons(2);
   const data = await api.get('participantDashboard', { participantId, mobile });
   const rows = (list) => list.length ? list.map(c => `
     <div class="card">
       <div class="card-title">${escapeHtml(c.sevaName)}</div>
       <div class="meta">
         <span>📅 ${fmtDate(c.date)}</span>
-        ${c.startTime ? `<span>⏰ ${escapeHtml(fmtTime(c.startTime))}</span>` : ''}
+        ${c.startTime ? `<span>⏰ ${fmtTime(c.startTime)}${c.endTime ? '–' + fmtTime(c.endTime) : ''}</span>` : ''}
         ${c.location ? `<span>📍 ${escapeHtml(c.location)}</span>` : ''}
         ${c.eventName ? `<span class="badge event">${escapeHtml(c.eventName)}</span>` : ''}
       </div>
@@ -629,6 +653,7 @@ async function loadMySevaDashboard(main, participantId, mobile) {
       if (!confirm('Cancel this seva registration?')) return;
       try {
         await api.post('cancelRegistration', { registrationId: btn.dataset.cancel, participantId, mobile });
+        bustCache();
         toast('Registration cancelled.');
         loadMySevaDashboard(main, participantId, mobile);
       } catch (e) { toast(e.message); }
@@ -654,7 +679,7 @@ async function renderAdmin(main) {
       try {
         const data = await api.get('adminSeva', { pin });
         store.admin = { pin, seva: data };
-        render();
+        renderMain();
       } catch (e) {
         document.getElementById('admin-login-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`;
       }
@@ -662,9 +687,9 @@ async function renderAdmin(main) {
     return;
   }
 
-  // Determine role by trying the super-admin overview endpoint
+  main.innerHTML = skeletons(2);
   let overview = null;
-  try { overview = await api.get('superAdminOverview', { pin: session.pin }); } catch (e) { overview = null; }
+  try { overview = await cachedGet('superAdminOverview:' + session.pin, () => api.get('superAdminOverview', { pin: session.pin }), 8000); } catch (e) { overview = null; }
   const isSuperAdmin = !!overview;
 
   main.innerHTML = `
@@ -672,80 +697,27 @@ async function renderAdmin(main) {
       <h2>${isSuperAdmin ? 'Super Admin' : 'Admin'} Dashboard</h2>
       <button class="btn btn-ghost small" id="admin-logout">Log Out</button>
     </div>
-    ${isSuperAdmin ? '' : ''}
     <div id="admin-content"></div>
   `;
-  document.getElementById('admin-logout').addEventListener('click', () => { store.clearAdmin(); render(); });
+  document.getElementById('admin-logout').addEventListener('click', () => { store.clearAdmin(); renderMain(); });
 
-  const content = document.getElementById('admin-content');
-  if (isSuperAdmin) {
-    renderSuperAdminContent(content, session.pin, overview);
-  } else {
-    renderScopedAdminContent(content, session.pin);
-  }
+  renderAdminDashboard(document.getElementById('admin-content'), session.pin, isSuperAdmin, overview);
 }
 
-async function renderScopedAdminContent(content, pin) {
-  const seva = await api.get('adminSeva', { pin });
-  if (!seva.length) {
-    content.innerHTML = '<div class="empty">No seva opportunities assigned to you.</div>';
-    return;
-  }
-  content.innerHTML = seva.map(s => `
-    <div class="card">
-      <div class="card-title">${escapeHtml(s['Seva Name'])}</div>
-      <div class="meta"><span>📅 ${fmtDate(s['Date'])}</span><span>${s.RegisteredCount} registered</span></div>
-      <div style="margin:10px 0;">
-        ${s.Registrations.map(r => `
-          <div class="reg-row">
-            <div class="who">${escapeHtml(r['Participant Name'])}<br><span class="m">${escapeHtml(r['Mobile Number'])} · ${escapeHtml(r['Attendance Status'] || 'PENDING')}</span></div>
-            <button class="btn btn-outline small" data-attend="${escapeHtml(r['Registration ID'])}">Mark Attended</button>
-          </div>
-        `).join('') || '<p class="muted">No registrations yet.</p>'}
-      </div>
-      <button class="btn btn-ghost small" data-add-participant="${escapeHtml(s['Seva ID'])}">+ Add Participant</button>
-    </div>
-  `).join('');
+const DOW_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-  content.querySelectorAll('[data-attend]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      try {
-        await api.post('markAttendance', { pin, registrationId: btn.dataset.attend, status: 'ATTENDED' });
-        toast('Marked attended.');
-        renderScopedAdminContent(content, pin);
-      } catch (e) { toast(e.message); }
-    });
-  });
-  content.querySelectorAll('[data-add-participant]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const sevaId = btn.dataset.addParticipant;
-      const overlay = openModal(`
-        <div class="sheet-head"><h3>Add Participant</h3><button class="close-x" id="modal-close">✕</button></div>
-        <div class="field"><label>Full Name</label><input id="ap-name"></div>
-        <div class="field"><label>Mobile</label><input id="ap-mobile" type="tel"></div>
-        <button class="btn btn-primary" id="ap-submit">Add</button>
-        <div id="ap-msg"></div>
-      `);
-      overlay.querySelector('#modal-close').addEventListener('click', () => overlay.remove());
-      overlay.querySelector('#ap-submit').addEventListener('click', async () => {
-        try {
-          await api.post('adminAddParticipant', { pin, sevaId, fullName: overlay.querySelector('#ap-name').value.trim(), mobile: overlay.querySelector('#ap-mobile').value.trim() });
-          overlay.remove();
-          toast('Participant added.');
-          renderScopedAdminContent(content, pin);
-        } catch (e) { overlay.querySelector('#ap-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`; }
-      });
-    });
-  });
-}
+// Drives both the Super Admin dashboard and the scoped Admin dashboard from one
+// place. Scoped admins get a smaller tab set ("My Seva" instead of "Seva", no
+// Recurring/Reports) and are locked to their own Seva Type when creating seva —
+// but both roles can create Events and add Seva Opportunities under them.
+async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
+  const tabs = isSuperAdmin
+    ? [['overview', 'Overview'], ['seva', 'Seva'], ['events', 'Events'], ['recurring', 'Recurring'], ['reports', 'Reports']]
+    : [['seva', 'My Seva'], ['events', 'Events']];
 
-async function renderSuperAdminContent(content, pin, overview) {
   content.innerHTML = `
     <div class="pill-toggle">
-      <button class="btn btn-primary small" data-sa-view="overview">Overview</button>
-      <button class="btn btn-ghost small" data-sa-view="events">Manage Events</button>
-      <button class="btn btn-ghost small" data-sa-view="seva">Manage Seva</button>
-      <button class="btn btn-ghost small" data-sa-view="reports">Reports</button>
+      ${tabs.map(t => `<button class="btn small ${t[0] === tabs[0][0] ? 'btn-primary' : 'btn-ghost'}" data-sa-view="${t[0]}">${t[1]}</button>`).join('')}
     </div>
     <div id="sa-body"></div>
   `;
@@ -757,6 +729,7 @@ async function renderSuperAdminContent(content, pin, overview) {
     });
   }
 
+  // ---- Overview (super admin only) ----
   function showOverview() {
     paintTabs('overview');
     body.innerHTML = `
@@ -767,7 +740,7 @@ async function renderSuperAdminContent(content, pin, overview) {
         <div class="stat"><div class="num">${overview.today.vacantSlots}</div><div class="lbl">Vacant Slots</div></div>
         <div class="stat"><div class="num">${overview.today.fullyBooked}</div><div class="lbl">Fully Booked</div></div>
       </div>
-      <h3 style="margin:18px 0 10px;">Upcoming Events</h3>
+      <h3 style="margin:16px 0 10px;">Upcoming Events</h3>
       ${overview.upcomingEvents.map(ev => `
         <div class="card">
           <div class="card-title">${escapeHtml(ev.eventName)}</div>
@@ -777,84 +750,404 @@ async function renderSuperAdminContent(content, pin, overview) {
     `;
   }
 
+  // Returns the seva list this role is allowed to see/manage: everything for
+  // Super Admin, only their assigned Seva Type's rows for a scoped Admin.
+  async function fetchSevaList() {
+    if (isSuperAdmin) return await cachedGet('allSeva:' + pin, () => api.get('allSeva', { pin }), 8000);
+    return await cachedGet('adminSeva:' + pin, () => api.get('adminSeva', { pin }), 8000);
+  }
+
+  function wireSevaCardActions(scopeEl, sevaList, refresh) {
+    scopeEl.querySelectorAll('[data-attend]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          await api.post('markAttendance', { pin, registrationId: btn.dataset.attend, status: 'ATTENDED' });
+          bustCache();
+          toast('Marked attended.');
+          refresh();
+        } catch (e) { toast(e.message); }
+      });
+    });
+    scopeEl.querySelectorAll('[data-add-participant]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sevaId = btn.dataset.addParticipant;
+        const overlay = openModal(`
+          <div class="sheet-head"><h3>Add Participant</h3><button class="close-x" id="modal-close">✕</button></div>
+          <div class="field"><label>Full Name</label><input id="ap-name"></div>
+          <div class="field"><label>Mobile</label><input id="ap-mobile" type="tel"></div>
+          <button class="btn btn-primary" id="ap-submit">Add</button>
+          <div id="ap-msg"></div>
+        `);
+        overlay.querySelector('#modal-close').addEventListener('click', () => overlay.remove());
+        overlay.querySelector('#ap-submit').addEventListener('click', async () => {
+          try {
+            await api.post('adminAddParticipant', { pin, sevaId, fullName: overlay.querySelector('#ap-name').value.trim(), mobile: overlay.querySelector('#ap-mobile').value.trim() });
+            bustCache();
+            overlay.remove();
+            toast('Participant added.');
+            refresh();
+          } catch (e) { overlay.querySelector('#ap-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`; }
+        });
+      });
+    });
+    scopeEl.querySelectorAll('[data-edit-seva]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const s = sevaList.find(x => String(x['Seva ID']) === btn.dataset.editSeva);
+        openSevaModal(s || {}, refresh);
+      });
+    });
+    scopeEl.querySelectorAll('[data-cancel-seva]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Cancel this seva opportunity? Existing registrants stay on record, but no new signups will be allowed.')) return;
+        try {
+          await api.post('cancelSeva', { pin, sevaId: btn.dataset.cancelSeva });
+          bustCache();
+          toast('Seva cancelled.');
+          refresh();
+        } catch (e) { toast(e.message); }
+      });
+    });
+  }
+
+  // ---- Seva ("Seva" for Super Admin, "My Seva" for a scoped Admin) ----
+  async function showSeva() {
+    paintTabs('seva');
+    body.innerHTML = skeletons(2);
+    const seva = await fetchSevaList();
+
+    if (isSuperAdmin) {
+      body.innerHTML = `
+        <button class="btn btn-primary" id="new-seva-btn" style="margin-bottom:14px;">+ New Seva Opportunity</button>
+        <table class="simple">
+          <tr><th>Seva</th><th>Date</th><th>Reg</th><th>Status</th><th></th></tr>
+          ${seva.map(s => `<tr>
+            <td>${escapeHtml(s['Seva Name'])}</td>
+            <td>${fmtDate(s['Date'])}</td>
+            <td>${s.RegisteredCount}/${s['Max Volunteers'] || '—'}</td>
+            <td>${escapeHtml(s['Status'])}</td>
+            <td><button class="btn btn-ghost small" data-edit-seva="${escapeHtml(s['Seva ID'])}">Edit</button></td>
+          </tr>`).join('')}
+        </table>
+      `;
+      document.getElementById('new-seva-btn').addEventListener('click', () => openSevaModal({}, showSeva));
+      wireSevaCardActions(body, seva, showSeva);
+      return;
+    }
+
+    // Scoped admin: card view with registrations + attendance, same as before,
+    // plus the ability to create/edit/cancel seva of their own assigned type.
+    body.innerHTML = `
+      <button class="btn btn-primary" id="new-seva-btn" style="margin-bottom:14px;">+ New Seva Opportunity</button>
+      ${seva.length ? seva.map(s => `
+        <div class="card">
+          <div class="card-title">${escapeHtml(s['Seva Name'])}</div>
+          <div class="meta"><span>📅 ${fmtDate(s['Date'])}</span><span>${s.RegisteredCount} registered</span></div>
+          <div style="margin:10px 0;">
+            ${s.Registrations.map(r => `
+              <div class="reg-row">
+                <div class="who">${escapeHtml(r['Participant Name'])}<br><span class="m">${escapeHtml(r['Mobile Number'])} · ${escapeHtml(r['Attendance Status'] || 'PENDING')}</span></div>
+                <button class="btn btn-outline small" data-attend="${escapeHtml(r['Registration ID'])}">Mark Attended</button>
+              </div>
+            `).join('') || '<p class="muted">No registrations yet.</p>'}
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-ghost small" data-add-participant="${escapeHtml(s['Seva ID'])}">+ Add Participant</button>
+            <button class="btn btn-outline small" data-edit-seva="${escapeHtml(s['Seva ID'])}">Edit</button>
+            <button class="btn btn-danger small" data-cancel-seva="${escapeHtml(s['Seva ID'])}">Cancel</button>
+          </div>
+        </div>
+      `).join('') : '<div class="empty">No seva opportunities of your type yet — create one above.</div>'}
+    `;
+    document.getElementById('new-seva-btn').addEventListener('click', () => openSevaModal({}, showSeva));
+    wireSevaCardActions(body, seva, showSeva);
+  }
+
+  // Shared create/edit modal for a Seva Opportunity.
+  // existing: {} for a brand-new standalone seva, {eventId} when adding a seva
+  // under a specific event, or a full seva row (from allSeva/adminSeva) to edit.
+  function openSevaModal(existing, onDone) {
+    const isEdit = !!existing['Seva ID'];
+    const overlay = openModal(`
+      <div class="sheet-head"><h3>${isEdit ? 'Edit Seva Opportunity' : 'New Seva Opportunity'}</h3><button class="close-x" id="modal-close">✕</button></div>
+      ${isSuperAdmin ? `<div class="field"><label>Seva Type ID</label><input id="ns-type" value="${isEdit ? escapeHtml(existing['Seva Type ID']) : ''}" placeholder="e.g. ST_ABC123"></div>` : ''}
+      ${!isEdit ? `<div class="field"><label>Event ID (optional)</label><input id="ns-event" value="${existing.eventId ? escapeHtml(existing.eventId) : ''}" placeholder="Leave blank for a standalone / ad-hoc seva"></div>` : ''}
+      <div class="field"><label>Seva Name</label><input id="ns-name" value="${isEdit ? escapeHtml(existing['Seva Name']) : ''}"></div>
+      <div class="row-2">
+        <div class="field"><label>Date</label><input id="ns-date" type="date" value="${isEdit ? fmtInputDate(existing['Date']) : ''}"></div>
+        <div class="field"><label>Max Volunteers</label><input id="ns-max" type="number" value="${isEdit ? escapeHtml(existing['Max Volunteers']) : ''}"></div>
+      </div>
+      <div class="row-2">
+        <div class="field"><label>Start Time</label><input id="ns-start" type="time" value="${isEdit ? fmtTimeInput(existing['Start Time']) : ''}"></div>
+        <div class="field"><label>End Time</label><input id="ns-end" type="time" value="${isEdit ? fmtTimeInput(existing['End Time']) : ''}"></div>
+      </div>
+      <div class="field"><label>Location</label><input id="ns-location" value="${isEdit ? escapeHtml(existing['Location']) : ''}"></div>
+      <button class="btn btn-primary" id="ns-submit">${isEdit ? 'Save Changes' : 'Create'}</button>
+      ${isSuperAdmin ? '<p class="helper">Find Seva Type IDs in the SevaTypes tab, and Event IDs in the Events tab (or the Events screen here).</p>' : '<p class="helper">This will be created under your assigned Seva Type.</p>'}
+      <div id="ns-msg"></div>
+    `);
+    overlay.querySelector('#modal-close').addEventListener('click', () => overlay.remove());
+    overlay.querySelector('#ns-submit').addEventListener('click', async () => {
+      const payload = {
+        pin,
+        name: overlay.querySelector('#ns-name').value.trim(),
+        date: overlay.querySelector('#ns-date').value,
+        startTime: overlay.querySelector('#ns-start').value,
+        endTime: overlay.querySelector('#ns-end').value,
+        location: overlay.querySelector('#ns-location').value.trim(),
+        maxVolunteers: overlay.querySelector('#ns-max').value
+      };
+      try {
+        if (isEdit) {
+          payload.sevaId = existing['Seva ID'];
+          await api.post('updateSeva', payload);
+          toast('Seva opportunity updated.');
+        } else {
+          if (isSuperAdmin) payload.sevaTypeId = overlay.querySelector('#ns-type').value.trim();
+          payload.eventId = existing.eventId || overlay.querySelector('#ns-event').value.trim();
+          await api.post('createSeva', payload);
+          toast('Seva opportunity created.');
+        }
+        bustCache();
+        overlay.remove();
+        if (onDone) onDone();
+      } catch (e) { overlay.querySelector('#ns-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`; }
+    });
+  }
+
+  // ---- Events (shared: both roles can create events and add seva under them) ----
   async function showEvents() {
     paintTabs('events');
-    body.innerHTML = '<div class="spinner"></div>';
-    const events = await api.get('allEvents', { pin });
+    body.innerHTML = skeletons(2);
+    const [events, seva] = await Promise.all([
+      cachedGet('allEvents:' + pin, () => api.get('allEvents', { pin }), 8000),
+      fetchSevaList()
+    ]);
+    const sevaByEvent = {};
+    seva.forEach(s => {
+      const key = s['Event ID'];
+      if (!key) return;
+      (sevaByEvent[key] = sevaByEvent[key] || []).push(s);
+    });
+
     body.innerHTML = `
       <button class="btn btn-primary" id="new-event-btn" style="margin-bottom:14px;">+ New Event</button>
-      ${events.length ? events.map(ev => `
+      ${events.length ? events.map(ev => {
+        const evSeva = sevaByEvent[ev['Event ID']] || [];
+        return `
         <div class="card">
-          <div class="card-title">${escapeHtml(ev['Event Name'])}</div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+            <div class="card-title">${escapeHtml(ev['Event Name'])}</div>
+            <span class="badge ${String(ev['Status']).toUpperCase() === 'ACTIVE' ? 'open' : 'full'}">${escapeHtml(ev['Status'])}</span>
+          </div>
           <div class="meta">
             <span>📅 ${fmtDate(ev['Start Date'])}${ev['End Date'] && ev['End Date'] !== ev['Start Date'] ? ' – ' + fmtDate(ev['End Date']) : ''}</span>
             ${ev['Location'] ? `<span>📍 ${escapeHtml(ev['Location'])}</span>` : ''}
-            <span>${escapeHtml(ev['Status'])}</span>
           </div>
-          <div class="meta"><span class="muted">Event code: <code>${escapeHtml(ev['Event ID'])}</code></span></div>
-          <div style="margin-top:10px;">
-            <button class="btn btn-outline small" data-add-seva-to-event="${escapeHtml(ev['Event ID'])}" data-event-name="${escapeHtml(ev['Event Name'])}" data-event-location="${escapeHtml(ev['Location'] || '')}">+ Add Seva Opportunity</button>
+          ${ev['Description'] ? `<div class="desc">${escapeHtml(ev['Description'])}</div>` : ''}
+          <p class="helper">Event ID: ${escapeHtml(ev['Event ID'])}</p>
+          <div style="margin:10px 0;">
+            <div style="font-weight:600; font-size:13px; margin-bottom:6px;">Seva under this event (${evSeva.length}${isSuperAdmin ? '' : ' — your type'})</div>
+            ${evSeva.length ? evSeva.map(s => `
+              <div class="reg-row">
+                <div class="who">${escapeHtml(s['Seva Name'])}<br><span class="m">${fmtDate(s['Date'])} · ${s.RegisteredCount}/${s['Max Volunteers'] || '—'} registered${s['Recurring Pattern ID'] ? ' · recurring' : ''} · ${escapeHtml(s['Status'])}</span></div>
+                <button class="btn btn-outline small" data-edit-event-seva="${escapeHtml(s['Seva ID'])}">Edit</button>
+              </div>
+            `).join('') : '<p class="muted">No seva added yet.</p>'}
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-ghost small" data-add-seva-event="${escapeHtml(ev['Event ID'])}">+ Add Seva</button>
+            <button class="btn btn-outline small" data-edit-event="${escapeHtml(ev['Event ID'])}">Edit Event</button>
           </div>
         </div>
-      `).join('') : '<div class="empty">No events yet. Create one above.</div>'}
+      `; }).join('') : '<div class="empty">No events yet.</div>'}
     `;
-    document.getElementById('new-event-btn').addEventListener('click', () => openNewEventModal());
-    body.querySelectorAll('[data-add-seva-to-event]').forEach(btn => {
-      btn.addEventListener('click', () => openNewSevaModal({
-        eventId: btn.dataset.addSevaToEvent,
-        eventName: btn.dataset.eventName,
-        location: btn.dataset.eventLocation
-      }));
+
+    document.getElementById('new-event-btn').addEventListener('click', () => openEventModal(null, showEvents));
+    body.querySelectorAll('[data-edit-event]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const ev = events.find(e => String(e['Event ID']) === btn.dataset.editEvent);
+        openEventModal(ev, showEvents);
+      });
+    });
+    body.querySelectorAll('[data-add-seva-event]').forEach(btn => {
+      btn.addEventListener('click', () => openSevaModal({ eventId: btn.dataset.addSevaEvent }, showEvents));
+    });
+    body.querySelectorAll('[data-edit-event-seva]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const s = seva.find(x => String(x['Seva ID']) === btn.dataset.editEventSeva);
+        openSevaModal(s || {}, showEvents);
+      });
     });
   }
 
-  function openNewEventModal() {
+  function openEventModal(existing, onDone) {
+    const isEdit = !!existing;
     const overlay = openModal(`
-      <div class="sheet-head"><h3>New Event</h3><button class="close-x" id="modal-close">✕</button></div>
-      <div class="field"><label>Event Name</label><input id="ne-name" placeholder="e.g. Janmastami Utsav"></div>
-      <div class="field"><label>Description</label><input id="ne-desc"></div>
-      <div class="field"><label>Start Date</label><input id="ne-start" type="date"></div>
-      <div class="field"><label>End Date</label><input id="ne-end" type="date"></div>
-      <div class="field"><label>Location</label><input id="ne-location"></div>
-      <button class="btn btn-primary" id="ne-submit">Create Event</button>
-      <p class="helper">You'll get an Event code (e.g. EV_XXXXX) right after creating this — use it to add Seva Opportunities to the event, either from here or from the Manage Seva tab.</p>
-      <div id="ne-msg"></div>
+      <div class="sheet-head"><h3>${isEdit ? 'Edit Event' : 'New Event'}</h3><button class="close-x" id="modal-close">✕</button></div>
+      <div class="field"><label>Event Name</label><input id="ev-name" value="${isEdit ? escapeHtml(existing['Event Name']) : ''}"></div>
+      <div class="field"><label>Description</label><textarea id="ev-desc" rows="2">${isEdit ? escapeHtml(existing['Description']) : ''}</textarea></div>
+      <div class="row-2">
+        <div class="field"><label>Start Date</label><input id="ev-start" type="date" value="${isEdit ? escapeHtml(fmtInputDate(existing['Start Date'])) : ''}"></div>
+        <div class="field"><label>End Date</label><input id="ev-end" type="date" value="${isEdit ? escapeHtml(fmtInputDate(existing['End Date'])) : ''}"></div>
+      </div>
+      <div class="field"><label>Location</label><input id="ev-location" value="${isEdit ? escapeHtml(existing['Location']) : ''}"></div>
+      ${isEdit ? `
+      <div class="field"><label>Status</label>
+        <select id="ev-status">
+          <option value="ACTIVE" ${existing['Status'] === 'ACTIVE' ? 'selected' : ''}>Active</option>
+          <option value="CANCELLED" ${existing['Status'] === 'CANCELLED' ? 'selected' : ''}>Cancelled</option>
+          <option value="COMPLETED" ${existing['Status'] === 'COMPLETED' ? 'selected' : ''}>Completed</option>
+        </select>
+      </div>` : ''}
+      <button class="btn btn-primary" id="ev-submit">${isEdit ? 'Save Changes' : 'Create Event'}</button>
+      <div id="ev-msg"></div>
     `);
     overlay.querySelector('#modal-close').addEventListener('click', () => overlay.remove());
-    overlay.querySelector('#ne-submit').addEventListener('click', async () => {
+    overlay.querySelector('#ev-submit').addEventListener('click', async () => {
+      const payload = {
+        pin,
+        name: overlay.querySelector('#ev-name').value.trim(),
+        description: overlay.querySelector('#ev-desc').value.trim(),
+        startDate: overlay.querySelector('#ev-start').value,
+        endDate: overlay.querySelector('#ev-end').value,
+        location: overlay.querySelector('#ev-location').value.trim()
+      };
       try {
-        const name = overlay.querySelector('#ne-name').value.trim();
-        if (!name) throw new Error('Event name is required.');
-        const result = await api.post('createEvent', {
-          pin,
-          name,
-          description: overlay.querySelector('#ne-desc').value.trim(),
-          startDate: overlay.querySelector('#ne-start').value,
-          endDate: overlay.querySelector('#ne-end').value,
-          location: overlay.querySelector('#ne-location').value.trim()
-        });
+        if (isEdit) {
+          payload.eventId = existing['Event ID'];
+          payload.status = overlay.querySelector('#ev-status').value;
+          await api.post('updateEvent', payload);
+          toast('Event updated.');
+        } else {
+          await api.post('createEvent', payload);
+          toast('Event created.');
+        }
+        bustCache();
         overlay.remove();
-        toast(`Event created — code ${result.eventId}`);
-        showEvents();
-      } catch (e) { overlay.querySelector('#ne-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`; }
+        if (onDone) onDone();
+      } catch (e) { overlay.querySelector('#ev-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`; }
     });
   }
 
-  async function showSeva() {
-    paintTabs('seva');
-    body.innerHTML = '<div class="spinner"></div>';
-    const seva = await api.get('allSeva', { pin });
+  // ---- Recurring Seva (weekly or "Nth weekday of month") — Super Admin only ----
+  async function showRecurring() {
+    paintTabs('recurring');
+    body.innerHTML = skeletons(2);
+    const patterns = await cachedGet('allRecurringPatterns:' + pin, () => api.get('allRecurringPatterns', { pin }), 8000);
     body.innerHTML = `
-      <button class="btn btn-primary" id="new-seva-btn" style="margin-bottom:14px;">+ New Seva Opportunity</button>
-      <table class="simple">
-        <tr><th>Seva</th><th>Date</th><th>Reg</th><th>Status</th></tr>
-        ${seva.map(s => `<tr><td>${escapeHtml(s['Seva Name'])}</td><td>${fmtDate(s['Date'])}</td><td>${s.RegisteredCount}/${s['Max Volunteers'] || '—'}</td><td>${escapeHtml(s['Status'])}</td></tr>`).join('')}
-      </table>
-      <p class="helper">Tip: create Seva Types and Recurring Patterns directly in the Google Sheet (SevaTypes / RecurringPatterns tabs), then use "Generate Recurring Occurrences" from the Apps Script editor to populate weekly seva automatically.</p>
+      <button class="btn btn-primary" id="new-recur-btn" style="margin-bottom:10px;">+ New Recurring Seva</button>
+      <button class="btn btn-ghost" id="generate-recur-btn" style="margin-bottom:14px;">Generate Occurrences Now</button>
+      ${patterns.length ? patterns.map(p => `
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+            <div class="card-title">${escapeHtml(p['Seva Name'])}</div>
+            <span class="badge ${String(p['Active']).toUpperCase() === 'TRUE' ? 'open' : 'full'}">${String(p['Active']).toUpperCase() === 'TRUE' ? 'ACTIVE' : 'PAUSED'}</span>
+          </div>
+          <div class="meta">
+            <span>${describePattern(p)}</span>
+            ${p['Start Time'] ? `<span>⏰ ${fmtTime(p['Start Time'])}${p['End Time'] ? '–' + fmtTime(p['End Time']) : ''}</span>` : ''}
+            ${p['Location'] ? `<span>📍 ${escapeHtml(p['Location'])}</span>` : ''}
+          </div>
+          <button class="btn btn-outline small" data-toggle-pattern="${escapeHtml(p['Pattern ID'])}" data-active="${String(p['Active']).toUpperCase()}">
+            ${String(p['Active']).toUpperCase() === 'TRUE' ? 'Pause' : 'Resume'}
+          </button>
+        </div>
+      `).join('') : '<div class="empty">No recurring seva set up yet.</div>'}
     `;
-    document.getElementById('new-seva-btn').addEventListener('click', () => openNewSevaModal());
+    document.getElementById('new-recur-btn').addEventListener('click', () => openRecurringModal());
+    document.getElementById('generate-recur-btn').addEventListener('click', async () => {
+      try {
+        const result = await api.post('generateRecurringOccurrences', { pin });
+        bustCache();
+        toast(`${result.created} seva occurrence(s) generated.`);
+      } catch (e) { toast(e.message); }
+    });
+    body.querySelectorAll('[data-toggle-pattern]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          const makeActive = btn.dataset.active !== 'TRUE';
+          await api.post('updateRecurringPattern', { pin, patternId: btn.dataset.togglePattern, active: makeActive });
+          bustCache();
+          showRecurring();
+        } catch (e) { toast(e.message); }
+      });
+    });
   }
 
+  function describePattern(p) {
+    const dow = DOW_NAMES[Number(p['Day Of Week'])] || '';
+    if (String(p['Recurrence Type']).toUpperCase() === 'MONTHLY_NTH') {
+      const nth = p['Week Of Month'];
+      const label = String(nth).toUpperCase() === 'LAST' ? 'Last' : { 1: '1st', 2: '2nd', 3: '3rd', 4: '4th' }[nth] || nth;
+      return `🗓 ${label} ${dow} of every month`;
+    }
+    return `🔁 Every ${dow}`;
+  }
+
+  function openRecurringModal() {
+    const overlay = openModal(`
+      <div class="sheet-head"><h3>New Recurring Seva</h3><button class="close-x" id="modal-close">✕</button></div>
+      <div class="field"><label>Seva Type ID</label><input id="rp-type" placeholder="e.g. ST_ABC123"></div>
+      <div class="field"><label>Seva Name</label><input id="rp-name"></div>
+      <div class="field"><label>Repeats</label>
+        <select id="rp-recurtype">
+          <option value="WEEKLY">Every week</option>
+          <option value="MONTHLY_NTH">One specific week each month</option>
+        </select>
+      </div>
+      <div class="row-2">
+        <div class="field"><label>Day of Week</label>
+          <select id="rp-dow">${DOW_NAMES.map((d, i) => `<option value="${i}">${d}</option>`).join('')}</select>
+        </div>
+        <div class="field" id="rp-week-wrap" style="display:none;">
+          <label>Which week</label>
+          <select id="rp-week">
+            <option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option>
+            <option value="4">4th</option><option value="LAST">Last</option>
+          </select>
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="field"><label>Start Time</label><input id="rp-start" type="time"></div>
+        <div class="field"><label>End Time</label><input id="rp-end" type="time"></div>
+      </div>
+      <div class="row-2">
+        <div class="field"><label>Location</label><input id="rp-location"></div>
+        <div class="field"><label>Max Volunteers</label><input id="rp-max" type="number"></div>
+      </div>
+      <button class="btn btn-primary" id="rp-submit">Create Recurring Seva</button>
+      <p class="helper">Example: "2nd Sunday every month" — pick Monthly, Sunday, and 2nd.</p>
+      <div id="rp-msg"></div>
+    `);
+    overlay.querySelector('#modal-close').addEventListener('click', () => overlay.remove());
+    const recurTypeEl = overlay.querySelector('#rp-recurtype');
+    const weekWrap = overlay.querySelector('#rp-week-wrap');
+    recurTypeEl.addEventListener('change', () => {
+      weekWrap.style.display = recurTypeEl.value === 'MONTHLY_NTH' ? 'block' : 'none';
+    });
+    overlay.querySelector('#rp-submit').addEventListener('click', async () => {
+      try {
+        await api.post('createRecurringPattern', {
+          pin,
+          sevaTypeId: overlay.querySelector('#rp-type').value.trim(),
+          name: overlay.querySelector('#rp-name').value.trim(),
+          recurrenceType: recurTypeEl.value,
+          dayOfWeek: overlay.querySelector('#rp-dow').value,
+          weekOfMonth: overlay.querySelector('#rp-week').value,
+          startTime: overlay.querySelector('#rp-start').value,
+          endTime: overlay.querySelector('#rp-end').value,
+          location: overlay.querySelector('#rp-location').value.trim(),
+          maxVolunteers: overlay.querySelector('#rp-max').value
+        });
+        bustCache();
+        overlay.remove();
+        toast('Recurring seva created. Click "Generate Occurrences Now" to schedule the next dates.');
+        showRecurring();
+      } catch (e) { overlay.querySelector('#rp-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`; }
+    });
+  }
+
+  // ---- Reports — Super Admin only ----
   async function showReports() {
     paintTabs('reports');
     body.innerHTML = `
@@ -868,8 +1161,9 @@ async function renderSuperAdminContent(content, pin, overview) {
     body.querySelectorAll('[data-report]').forEach(b => {
       b.addEventListener('click', async () => {
         const type = b.dataset.report;
-        const data = await api.get('reports', { pin, type });
         const table = document.getElementById('report-table');
+        table.innerHTML = skeletons(1);
+        const data = await api.get('reports', { pin, type });
         if (!data.length) { table.innerHTML = '<p class="muted">No data.</p>'; return; }
         const cols = Object.keys(data[0]);
         table.innerHTML = `<table class="simple"><tr>${cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr>${data.map(row => `<tr>${cols.map(c => `<td>${escapeHtml(row[c])}</td>`).join('')}</tr>`).join('')}</table>`;
@@ -877,88 +1171,28 @@ async function renderSuperAdminContent(content, pin, overview) {
     });
   }
 
-  // prefill: optional { eventId, eventName, location } — passed when this
-  // modal is opened from the "+ Add Seva Opportunity" button on an event
-  // card, so the Event ID is already filled in.
-  function openNewSevaModal(prefill) {
-    prefill = prefill || {};
-    const overlay = openModal(`
-      <div class="sheet-head"><h3>New Seva Opportunity</h3><button class="close-x" id="modal-close">✕</button></div>
-      <div class="field">
-        <label>Event Code (optional)</label>
-        <input id="ns-event" placeholder="e.g. EV_XXXXX — leave blank for a standalone seva" value="${escapeHtml(prefill.eventId || '')}">
-        <div id="ns-event-status" class="helper" style="margin-top:4px;">${prefill.eventName ? `Linked to: ${escapeHtml(prefill.eventName)}` : 'Type an event code to link this seva to an event.'}</div>
-      </div>
-      <div class="field"><label>Seva Type ID</label><input id="ns-type" placeholder="e.g. ST_ABC123"></div>
-      <div class="field"><label>Seva Name</label><input id="ns-name" value="${escapeHtml(prefill.eventName || '')}"></div>
-      <div class="field"><label>Date</label><input id="ns-date" type="date"></div>
-      <div class="field"><label>Start Time</label><input id="ns-start" type="time"></div>
-      <div class="field"><label>End Time</label><input id="ns-end" type="time"></div>
-      <div class="field"><label>Location</label><input id="ns-location" value="${escapeHtml(prefill.location || '')}"></div>
-      <div class="field"><label>Max Volunteers</label><input id="ns-max" type="number"></div>
-      <button class="btn btn-primary" id="ns-submit">Create</button>
-      <p class="helper">Find Seva Type IDs in the SevaTypes tab of your Google Sheet. To tie this seva to an event, just type or paste that event's code above — its details will be confirmed automatically.</p>
-      <div id="ns-msg"></div>
-    `);
-    overlay.querySelector('#modal-close').addEventListener('click', () => overlay.remove());
-
-    const eventInput = overlay.querySelector('#ns-event');
-    const eventStatus = overlay.querySelector('#ns-event-status');
-    let lastLookedUp = null;
-
-    // As soon as an event code is typed/pasted and the field loses focus,
-    // look the event up and confirm it (and offer to fill name/location).
-    eventInput.addEventListener('change', async () => {
-      const code = eventInput.value.trim();
-      if (!code) { eventStatus.textContent = 'Type an event code to link this seva to an event.'; return; }
-      if (code === lastLookedUp) return;
-      eventStatus.textContent = 'Looking up event…';
-      try {
-        const detail = await api.get('eventDetail', { eventId: code });
-        lastLookedUp = code;
-        eventStatus.textContent = `Linked to: ${detail.event['Event Name']}`;
-        const nameField = overlay.querySelector('#ns-name');
-        const locField = overlay.querySelector('#ns-location');
-        if (!nameField.value.trim()) nameField.value = detail.event['Event Name'];
-        if (!locField.value.trim() && detail.event['Location']) locField.value = detail.event['Location'];
-      } catch (e) {
-        eventStatus.innerHTML = `<span class="error-text">No event found with that code — double-check it, or leave this blank.</span>`;
-      }
-    });
-
-    overlay.querySelector('#ns-submit').addEventListener('click', async () => {
-      try {
-        const result = await api.post('createSeva', {
-          pin,
-          eventId: eventInput.value.trim(),
-          sevaTypeId: overlay.querySelector('#ns-type').value.trim(),
-          name: overlay.querySelector('#ns-name').value.trim(),
-          date: overlay.querySelector('#ns-date').value,
-          startTime: overlay.querySelector('#ns-start').value,
-          endTime: overlay.querySelector('#ns-end').value,
-          location: overlay.querySelector('#ns-location').value.trim(),
-          maxVolunteers: overlay.querySelector('#ns-max').value
-        });
-        overlay.remove();
-        toast('Seva opportunity created.');
-        if (eventInput.value.trim()) showEvents(); else showSeva();
-      } catch (e) { overlay.querySelector('#ns-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`; }
-    });
-  }
-
   content.querySelectorAll('[data-sa-view]').forEach(b => {
     b.addEventListener('click', () => {
       if (b.dataset.saView === 'overview') showOverview();
-      else if (b.dataset.saView === 'events') showEvents();
       else if (b.dataset.saView === 'seva') showSeva();
+      else if (b.dataset.saView === 'events') showEvents();
+      else if (b.dataset.saView === 'recurring') showRecurring();
       else showReports();
     });
   });
-  showOverview();
+
+  if (isSuperAdmin) showOverview(); else showSeva();
+}
+
+function fmtInputDate(d) {
+  if (!d) return '';
+  const dt = new Date(d);
+  if (isNaN(dt)) return '';
+  return dt.toISOString().slice(0, 10);
 }
 
 /* ---------------- Boot ---------------- */
-render();
+setTab('home');
 </script>
 </body>
 </html>
