@@ -1553,8 +1553,22 @@ async function loadMySevaDashboard(main, participantId, mobile) {
         <td>${statusPill(c.displayStatus)}${c.attendance && c.attendance !== 'PENDING' ? `<span class="sub">${escapeHtml(c.attendance)}</span>` : ''}</td>
       </tr>
       <tr class="row-detail hidden"><td colspan="3">
-        ${c.location ? `<div class="muted" style="margin:8px 0 4px;">📍 ${escapeHtml(c.location)}</div>` : ''}
-        ${c.eventName ? `<div class="muted" style="margin:4px 0;">Event: ${escapeHtml(c.eventName)}</div>` : ''}
+        <table class="seva-info-table">
+          <tr><td>Date</td><td>${escapeHtml(fmtDate(c.date))}</td></tr>
+          <tr><td>Time</td><td>${escapeHtml(timeText || '—')}</td></tr>
+          <tr><td>Location</td><td>${escapeHtml(c.location || '—')}</td></tr>
+          ${c.eventName ? `<tr><td>Event</td><td>${escapeHtml(c.eventName)}</td></tr>` : ''}
+        </table>
+        ${(c.contactPerson || c.contactNumber) ? `
+          <div class="seva-highlight contact">
+            <span class="icon">📞</span>
+            <div><strong>Contact:</strong> ${escapeHtml(c.contactPerson || '')}${c.contactNumber ? ' · ' + escapeHtml(c.contactNumber) : ''}</div>
+          </div>` : ''}
+        ${c.instructions ? `
+          <div class="seva-highlight notes">
+            <span class="icon">📝</span>
+            <div><strong>Notes:</strong> ${escapeHtml(c.instructions)}</div>
+          </div>` : ''}
         ${canReschedule ? `<button class="btn btn-outline small" style="margin-top:8px;" data-reschedule="${escapeHtml(c.registrationId)}" data-pattern="${escapeHtml(c.recurringPatternId)}" data-seva="${escapeHtml(c.sevaId)}">Change Date</button>` : ''}
         ${isUpcoming && c.status === 'CONFIRMED' && !c.recurringPatternId ? `<p class="muted" style="margin-top:8px;">Need to change or cancel this? Please contact the seva coordinator.</p>` : ''}
       </td></tr>
@@ -1615,9 +1629,22 @@ async function loadMySevaDashboard(main, participantId, mobile) {
         <td>${statusPill(next.displayStatus)}</td>
       </tr>
       <tr class="row-detail hidden"><td colspan="3">
-        ${next.location ? `<div class="muted" style="margin:8px 0 4px;">📍 ${escapeHtml(next.location)}</div>` : ''}
-        ${next.eventName ? `<div class="muted" style="margin:4px 0 10px;">Event: ${escapeHtml(next.eventName)}</div>` : ''}
-        <div style="font-weight:600; font-size:13px; margin:8px 0 4px;">Forecast — ${escapeHtml(countLabel)}</div>
+        <table class="seva-info-table">
+          <tr><td>Time</td><td>${escapeHtml(timeText || '—')}</td></tr>
+          <tr><td>Location</td><td>${escapeHtml(next.location || '—')}</td></tr>
+          ${next.eventName ? `<tr><td>Event</td><td>${escapeHtml(next.eventName)}</td></tr>` : ''}
+        </table>
+        ${(next.contactPerson || next.contactNumber) ? `
+          <div class="seva-highlight contact">
+            <span class="icon">📞</span>
+            <div><strong>Contact:</strong> ${escapeHtml(next.contactPerson || '')}${next.contactNumber ? ' · ' + escapeHtml(next.contactNumber) : ''}</div>
+          </div>` : ''}
+        ${next.instructions ? `
+          <div class="seva-highlight notes">
+            <span class="icon">📝</span>
+            <div><strong>Notes:</strong> ${escapeHtml(next.instructions)}</div>
+          </div>` : ''}
+        <div style="font-weight:600; font-size:13px; margin:10px 0 4px;">Forecast — ${escapeHtml(countLabel)}</div>
         ${dateRows}
       </td></tr>
     `;
