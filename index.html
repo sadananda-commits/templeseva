@@ -33,6 +33,8 @@
   --success-soft: #DCEFE1;
   --danger: #B23A34;
   --danger-soft: #F8DEDB;
+  --info: #2E6F9E;
+  --info-soft: #DCEAF3;
   --radius: 16px;
   --font-display: 'Baloo 2', system-ui, sans-serif;
   --font-body: 'Mukta', system-ui, sans-serif;
@@ -236,6 +238,48 @@ table.data-table .sub{display:block; font-size:11.5px; color:var(--ink-soft); fo
 .identity-bar.hidden{display:none;}
 .identity-bar.force-hidden{display:none;}
 .signin-bar{display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:14px; font-size:13.5px;}
+/* ---- Next Seva hero card (Upcoming Seva, above the view toggle) ---- */
+.hero-card{background:linear-gradient(135deg, var(--primary-soft), var(--surface-warm)); border-radius:var(--radius); padding:16px 18px; margin-bottom:16px; box-shadow:var(--shadow);}
+.hero-eyebrow{font-size:11.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--primary-dark);}
+.hero-title{font-family:var(--font-display); font-size:22px; font-weight:700; color:var(--ink); margin:2px 0 4px;}
+.hero-meta{font-size:13.5px; color:var(--ink-soft); margin-bottom:12px;}
+.hero-bottom{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+.hero-slots{font-size:13px; font-weight:700; color:var(--success);}
+.hero-slots.full{color:var(--danger);}
+/* ---- Event Detail: banner image + seva shortlist ---- */
+.event-banner{width:100%; max-height:220px; object-fit:cover; border-radius:var(--radius); margin-bottom:14px; box-shadow:var(--shadow);}
+.shortlist{border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; background:var(--surface);}
+.shortlist-item{border-bottom:1px solid var(--line);}
+.shortlist-item:last-child{border-bottom:none;}
+.shortlist-row{display:flex; align-items:center; gap:10px; padding:13px 14px; cursor:pointer;}
+.shortlist-dot{width:10px; height:10px; border-radius:50%; flex-shrink:0;}
+.shortlist-name{flex:1; font-weight:600; font-size:14.5px; color:var(--ink);}
+.shortlist-chevron{color:var(--ink-soft); font-size:18px; transition:transform .15s;}
+.shortlist-item.expanded .shortlist-chevron{transform:rotate(90deg);}
+.shortlist-detail{padding:0 14px 14px 34px;}
+.shortlist-detail.hidden{display:none;}
+/* ---- Upcoming Seva: List/Calendar toggle + month grid ---- */
+.view-toggle{display:flex; gap:6px; margin-bottom:14px;}
+.vt-btn{flex:1; padding:9px 10px; border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--ink-soft); font-weight:700; font-size:13px; cursor:pointer; font-family:var(--font-body);}
+.vt-btn.active{background:var(--primary); color:#fff; border-color:var(--primary);}
+.cal-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+.cal-month-label{font-family:var(--font-display); font-weight:700; font-size:16px;}
+.cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:12px;}
+.cal-dow{text-align:center; font-size:11px; font-weight:700; color:var(--ink-soft); padding:4px 0;}
+.cal-cell{position:relative; aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; border:1px solid transparent; background:none; font-family:var(--font-body); cursor:pointer; padding:2px;}
+.cal-cell.empty{cursor:default;}
+.cal-cell.has-seva{background:var(--surface-warm);}
+.cal-cell.today .cal-daynum{color:var(--primary); font-weight:800;}
+.cal-cell.selected{border-color:var(--primary); background:var(--primary-soft);}
+.cal-daynum{font-size:13px; color:var(--ink);}
+.cal-dots{display:flex; gap:3px; margin-top:2px; height:9px; align-items:center; justify-content:center;}
+.cal-dot{width:6px; height:6px; border-radius:50%; background:var(--success); display:inline-block;}
+.cal-dot.festival{background:none; color:var(--primary); font-size:9px; line-height:6px; width:auto; height:auto;}
+.cal-dot.registered{background:var(--info);}
+.cal-ring-full{position:absolute; inset:1px; border-radius:10px; border:2px solid var(--danger); pointer-events:none;}
+.cal-legend{display:flex; flex-wrap:wrap; gap:8px 14px; font-size:11.5px; color:var(--ink-soft); margin-bottom:16px;}
+.cal-legend span{display:flex; align-items:center; gap:5px;}
+.cal-legend .cal-ring-sample{display:inline-block; width:10px; height:10px; border-radius:50%; border:2px solid var(--danger); position:static;}
 .pill-toggle{display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; -webkit-overflow-scrolling:touch;}
 .pill-toggle .btn{width:auto; white-space:nowrap;}
 .tag-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
@@ -369,7 +413,10 @@ function updateIdentityBar() {
   }
 }
 
-let state = { tab: 'home', route: {}, sevaList: [], groupList: [] };
+let state = { tab: 'home', route: {}, sevaList: [], groupList: [],
+  // Upcoming Seva view mode + calendar navigation state, kept here so
+  // switching tabs and back doesn't lose the admin's/participant's place.
+  calView: 'list', calYear: new Date().getFullYear(), calMonth: new Date().getMonth() + 1, calSelectedDate: null };
 
 function toast(msg) {
   const el = document.createElement('div');
@@ -499,34 +546,6 @@ function bindExpandableRows(container) {
   });
 }
 
-/* ---------------- Seva row (used on Home + inside an Event) ---------------- */
-function sevaRow(s) {
-  const max = Number(s['Max Volunteers']) || 0;
-  const count = s.RegisteredCount || 0;
-  const full = s.IsFull;
-  const pct = max > 0 ? Math.min(100, Math.round((count / max) * 100)) : 0;
-  const slotsText = max > 0 ? `${count}/${max}` : `${count}`;
-  const timeText = s['Start Time'] ? `${fmtTime(s['Start Time'])}${s['End Time'] ? '–' + fmtTime(s['End Time']) : ''}` : '';
-  return `
-    <tr class="row-summary" data-seva-row="${escapeHtml(s['Seva ID'])}">
-      <td class="name-cell"><span class="row-chevron">▸</span>${escapeHtml(s['Seva Name'])}${s['Recurring Pattern ID'] ? '<span class="sub">Recurring</span>' : ''}</td>
-      <td>${fmtDate(s['Date'])}${timeText ? `<span class="sub">${timeText}</span>` : ''}</td>
-      <td><span class="slot-text ${full ? 'full' : 'ok'}">${slotsText}</span></td>
-    </tr>
-    <tr class="row-detail hidden"><td colspan="3">
-      ${s['Location'] ? `<div class="muted" style="margin:8px 0 4px;">📍 ${escapeHtml(s['Location'])}</div>` : ''}
-      ${s['Instructions'] ? `<div class="desc" style="margin:6px 0;">${escapeHtml(s['Instructions'])}</div>` : ''}
-      ${s['Contact Person'] ? `<div class="muted" style="margin:4px 0 8px;">Contact: ${escapeHtml(s['Contact Person'])}${s['Contact Number'] ? ' · ' + escapeHtml(s['Contact Number']) : ''}</div>` : ''}
-      ${max > 0 ? `
-        <div class="slotbar"><div class="fill" style="width:${pct}%"></div></div>
-        <div class="slot-text ${full ? 'full' : 'ok'}">${count} / ${max} volunteers${full ? '' : ' &middot; ' + (max - count) + ' slots remaining'}</div>
-      ` : ''}
-      <button class="btn ${full ? 'btn-ghost' : 'btn-primary'}" style="margin-top:10px;" ${full ? 'disabled' : ''} data-register="${escapeHtml(s['Seva ID'])}">
-        ${full ? 'Full — Join Waitlist' : 'Register for Seva'}
-      </button>
-    </td></tr>
-  `;
-}
 
 /* ---------------- Grouped seva row (Upcoming Seva tab only) ----------------
    One row per recurring pattern (or per standalone seva) instead of one row
@@ -621,11 +640,8 @@ function groupRow(g) {
 async function renderHome(main) {
   await validateIdentity(); // clears store.me if it's gone stale -- see validateIdentity()
   const me = store.me;
-  const cacheKey = 'upcomingSevaGrouped:' + (me ? me.participantId : 'anon');
-  if (!cache.has(cacheKey)) main.innerHTML = skeletons(3);
   const params = me && me.participantId && me.mobile ? { participantId: me.participantId, mobile: me.mobile } : {};
-  const groups = await cachedGet(cacheKey, () => api.get('upcomingSevaGrouped', params));
-  state.groupList = groups;
+
   // Sign In / Signed-in-as bar -- lets a participant identify themselves up
   // front so the table below reflects THEIR registered/confirmed status,
   // instead of only being detectable after they've already interacted with
@@ -633,16 +649,88 @@ async function renderHome(main) {
   const signInBar = me
     ? `<div class="signin-bar"><span>Signed in as <strong>${escapeHtml(me.fullName)}</strong></span><button class="btn btn-ghost small" id="signin-switch">Switch</button></div>`
     : `<div class="signin-bar"><span class="muted">Not signed in</span><button class="btn btn-outline small" id="signin-btn">Sign In</button></div>`;
-  if (!groups.length) {
-    main.innerHTML = signInBar + `<div class="empty"><div class="glyph">🪔</div><p>No seva opportunities open right now. Please check back soon.</p></div>`;
+
+  const viewToggle = `
+    <div class="view-toggle">
+      <button type="button" class="vt-btn ${state.calView === 'list' ? 'active' : ''}" data-view="list">☰ List View</button>
+      <button type="button" class="vt-btn ${state.calView === 'calendar' ? 'active' : ''}" data-view="calendar">📅 Calendar View</button>
+    </div>`;
+
+  // Fetched once, up front, regardless of which view is active -- the Next
+  // Seva hero card sits above both List and Calendar view, and groups[0] is
+  // already the soonest upcoming seva (getUpcomingSevaGrouped_ sorts
+  // ascending by date). state.groupList is also what openGroupRegisterModal
+  // looks the hero's group up in, so it needs to be set before either
+  // view's buttons get bound.
+  const cacheKey = 'upcomingSevaGrouped:' + (me ? me.participantId : 'anon');
+  if (!cache.has(cacheKey)) main.innerHTML = skeletons(3);
+  const groups = await cachedGet(cacheKey, () => api.get('upcomingSevaGrouped', params));
+  state.groupList = groups;
+  const heroCard = renderNextSevaHero(groups[0]);
+
+  if (state.calView === 'calendar') {
+    const calCacheKey = `sevaCalendarMonth:${state.calYear}-${state.calMonth}:` + (me ? me.participantId : 'anon');
+    if (!cache.has(calCacheKey)) main.innerHTML = skeletons(3);
+    const calData = await cachedGet(calCacheKey, () => api.get('sevaCalendarMonth', Object.assign({ year: state.calYear, month: state.calMonth }, params)));
+    main.innerHTML = `${signInBar}${heroCard}${viewToggle}<section class="block">
+      ${renderCalendarGrid(state.calYear, state.calMonth, calData.today, calData.days, state.calSelectedDate)}
+      <div id="cal-day-list">${renderCalendarDayList(state.calSelectedDate, calData.sevaByDate)}</div>
+    </section>`;
     bindSignInBar(main);
+    bindViewToggle(main);
+    bindCalendarNav(main);
+    bindCalendarDayClicks(main);
+    bindRegisterButtons(); // the day-list's Register buttons reuse the existing single-seva register modal
+    bindGroupRegisterButtons(); // the hero card's Register button
     return;
   }
-  main.innerHTML = `${signInBar}<section class="block"><h2>Upcoming Seva</h2>${tableShell(['Seva', 'When', 'Slots', 'Sign Up'], groups.map(groupRow).join(''))}</section>`;
+
+  if (!groups.length) {
+    main.innerHTML = signInBar + viewToggle + `<div class="empty"><div class="glyph">🪔</div><p>No seva opportunities open right now. Please check back soon.</p></div>`;
+    bindSignInBar(main);
+    bindViewToggle(main);
+    return;
+  }
+  main.innerHTML = `${signInBar}${heroCard}${viewToggle}<section class="block"><h2>Upcoming Seva</h2>${tableShell(['Seva', 'When', 'Slots', 'Sign Up'], groups.map(groupRow).join(''))}</section>`;
   bindSignInBar(main);
+  bindViewToggle(main);
   bindExpandableRows(main);
   bindGroupRegisterButtons();
   bindConfirmBoxes(main);
+}
+
+// "NEXT SEVA" hero card -- the single soonest upcoming seva, shown above
+// both List and Calendar view (matches the reference mockup's home-screen
+// hero). Purely a highlight of what's already in `groups`; no separate
+// backend call. Hidden entirely when there's nothing upcoming.
+function renderNextSevaHero(g) {
+  if (!g) return '';
+  const max = Number(g.maxVolunteers) || 0;
+  const count = g.registeredCount || 0;
+  const full = g.isFull;
+  const timeText = g.nextStartTime ? `${fmtTime(g.nextStartTime)}${g.nextEndTime ? '–' + fmtTime(g.nextEndTime) : ''}` : '';
+  const slotsText = max > 0 ? `${count} of ${max} spots filled` : `${count} registered`;
+
+  let actionHtml;
+  if (g.myRegistrationId || g.registeredForPattern) {
+    actionHtml = statusPill(g.displayStatus);
+  } else if (full) {
+    actionHtml = `<button class="btn btn-ghost small" disabled>Full — Join Waitlist</button>`;
+  } else {
+    actionHtml = `<button class="btn btn-primary small" data-group-register="${escapeHtml(g.groupId)}">Register →</button>`;
+  }
+
+  return `
+    <div class="hero-card">
+      <div class="hero-eyebrow">Next Seva</div>
+      <div class="hero-title">${escapeHtml(g.sevaName)}</div>
+      <div class="hero-meta">${escapeHtml(fmtDate(g.nextDate))}${timeText ? ' · ' + escapeHtml(timeText) : ''}</div>
+      <div class="hero-bottom">
+        <span class="hero-slots ${full ? 'full' : ''}">${escapeHtml(slotsText)}</span>
+        ${actionHtml}
+      </div>
+    </div>
+  `;
 }
 
 function bindSignInBar(main) {
@@ -650,6 +738,115 @@ function bindSignInBar(main) {
   if (signInBtn) signInBtn.addEventListener('click', openSignInModal);
   const switchBtn = main.querySelector('#signin-switch');
   if (switchBtn) switchBtn.addEventListener('click', () => { store.clearMe(); bustCache(); openSignInModal(); });
+}
+
+function bindViewToggle(main) {
+  main.querySelectorAll('.vt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (state.calView === btn.dataset.view) return;
+      state.calView = btn.dataset.view;
+      renderMain();
+    });
+  });
+}
+
+/* ---- Calendar view (Upcoming Seva) ----
+   Month grid with a dot per day summarizing that date's seva (see
+   getSevaCalendarMonth_ on the backend): green = seva available, star =
+   part of a festival/event, blue = this participant is already registered
+   for something that day, red ring = everything that day is full. Tapping
+   a date shows its full seva list underneath, reusing the existing
+   single-seva Register modal (openRegisterModal) for sign-up. */
+function daysInMonth_(year, month) { return new Date(year, month, 0).getDate(); } // month 1-12
+function firstWeekdayOfMonth_(year, month) { return new Date(year, month - 1, 1).getDay(); } // 0=Sun
+
+function renderCalendarGrid(year, month, todayStr, days, selectedDate) {
+  const totalDays = daysInMonth_(year, month);
+  const firstDow = firstWeekdayOfMonth_(year, month);
+  const monthLabel = new Date(year, month - 1, 1).toLocaleString('en-US', { month: 'long' });
+
+  let cells = '';
+  for (let i = 0; i < firstDow; i++) cells += `<div class="cal-cell empty"></div>`;
+  for (let d = 1; d <= totalDays; d++) {
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const info = days[dateStr];
+    let dots = '';
+    if (info) {
+      if (info.myRegistered) dots += `<span class="cal-dot registered"></span>`;
+      else if (info.anyOpen) dots += `<span class="cal-dot"></span>`;
+      if (info.isFestival) dots += `<span class="cal-dot festival">★</span>`;
+    }
+    const fullRing = info && info.allFull ? '<span class="cal-ring-full"></span>' : '';
+    cells += `
+      <button type="button" class="cal-cell ${info ? 'has-seva' : ''} ${dateStr === todayStr ? 'today' : ''} ${dateStr === selectedDate ? 'selected' : ''}" data-cal-date="${dateStr}">
+        ${fullRing}
+        <span class="cal-daynum">${d}</span>
+        <span class="cal-dots">${dots}</span>
+      </button>`;
+  }
+  const dowRow = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(l => `<div class="cal-dow">${l}</div>`).join('');
+
+  return `
+    <div class="cal-nav">
+      <button type="button" class="btn btn-ghost small" id="cal-prev">‹</button>
+      <div class="cal-month-label">${escapeHtml(monthLabel)} ${year}</div>
+      <button type="button" class="btn btn-ghost small" id="cal-next">›</button>
+    </div>
+    <div class="cal-grid">${dowRow}${cells}</div>
+    <div class="cal-legend">
+      <span><span class="cal-dot"></span> Seva Available</span>
+      <span><span class="cal-dot festival">★</span> Festival/Event</span>
+      <span><span class="cal-dot registered"></span> My Registered</span>
+      <span><span class="cal-ring-sample"></span> Full</span>
+    </div>
+  `;
+}
+
+function renderCalendarDayList(dateStr, sevaByDate) {
+  if (!dateStr) return '<p class="muted" style="padding:6px 0 16px;">Tap a date above to see seva scheduled that day.</p>';
+  const list = (sevaByDate && sevaByDate[dateStr]) || [];
+  if (!list.length) return `<p class="muted" style="padding:6px 0 16px;">No seva scheduled on ${escapeHtml(fmtDate(dateStr))}.</p>`;
+  return `
+    <h3 style="margin:14px 0 8px;">${escapeHtml(fmtDate(dateStr))}</h3>
+    ${list.map(s => {
+      const timeText = s.startTime ? `${fmtTime(s.startTime)}${s.endTime ? '–' + fmtTime(s.endTime) : ''}` : '';
+      const canRegister = s.displayStatus === 'Not Registered';
+      return `
+        <div class="reg-row">
+          <div class="who">
+            ${escapeHtml(s.sevaName)}${s.isFestival ? `<span class="sub">🎉 ${escapeHtml(s.eventName || 'Festival')}</span>` : ''}
+            <br><span class="m">${escapeHtml(timeText)}${s.location ? ' · ' + escapeHtml(s.location) : ''}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+            ${statusPill(s.displayStatus)}
+            ${canRegister ? `<button class="btn ${s.isFull ? 'btn-ghost' : 'btn-outline'} small" ${s.isFull ? 'disabled' : ''} data-register="${escapeHtml(s.sevaId)}">${s.isFull ? 'Full' : 'Register'}</button>` : ''}
+          </div>
+        </div>`;
+    }).join('')}
+  `;
+}
+
+function bindCalendarNav(main) {
+  const prev = main.querySelector('#cal-prev');
+  const next = main.querySelector('#cal-next');
+  if (prev) prev.addEventListener('click', () => { shiftCalendarMonth_(-1); renderMain(); });
+  if (next) next.addEventListener('click', () => { shiftCalendarMonth_(1); renderMain(); });
+}
+function shiftCalendarMonth_(delta) {
+  let m = state.calMonth + delta;
+  let y = state.calYear;
+  if (m < 1) { m = 12; y -= 1; }
+  if (m > 12) { m = 1; y += 1; }
+  state.calMonth = m; state.calYear = y;
+  state.calSelectedDate = null; // clear selection when the visible month changes
+}
+function bindCalendarDayClicks(main) {
+  main.querySelectorAll('[data-cal-date]').forEach(cell => {
+    cell.addEventListener('click', () => {
+      state.calSelectedDate = cell.dataset.calDate;
+      renderMain(); // cheap: same month's data is already cached, this just re-renders
+    });
+  });
 }
 
 /* ---- Sign-up checkbox click handling ----
@@ -823,21 +1020,90 @@ async function renderEventDetail(main, eventId) {
   main.innerHTML = skeletons(2);
   const detail = await cachedGet('eventDetail:' + eventId, () => api.get('eventDetail', { eventId }));
   const ev = detail.event;
+  const count = detail.sevaOpportunities.length;
+  const bannerHtml = ev['Image URL']
+    ? `<img src="${escapeHtml(ev['Image URL'])}" alt="" class="event-banner" onerror="this.remove()">`
+    : '';
   main.innerHTML = `
     <button class="btn btn-ghost small" id="back-events" style="margin-bottom:12px;">← All events</button>
+    ${bannerHtml}
     <section class="block">
       <h2>${escapeHtml(ev['Event Name'])}</h2>
       <p class="muted">${fmtDate(ev['Start Date'])}${ev['Location'] ? ' · ' + escapeHtml(ev['Location']) : ''}</p>
       ${ev['Description'] ? `<p class="desc">${escapeHtml(ev['Description'])}</p>` : ''}
     </section>
     <section class="block">
-      <h2>Available Seva</h2>
-      ${detail.sevaOpportunities.length ? tableShell(['Seva', 'When', 'Slots'], detail.sevaOpportunities.map(sevaRow).join('')) : '<div class="empty">No seva opportunities posted for this event yet.</div>'}
+      <h2>${count} Seva Opportunit${count === 1 ? 'y' : 'ies'}</h2>
+      ${count ? `<div class="shortlist">${detail.sevaOpportunities.map(eventSevaShortlistRow).join('')}</div>` : '<div class="empty">No seva opportunities posted for this event yet.</div>'}
     </section>
   `;
   document.getElementById('back-events').addEventListener('click', () => setTab('events'));
-  bindExpandableRows(main);
+  bindShortlistToggles(main);
   bindRegisterButtons();
+}
+
+// A fixed, deterministic palette so the same Category always gets the same
+// dot color across the app -- not tied to sheet row order, so adding or
+// reordering Seva Types doesn't reshuffle colors participants have gotten
+// used to.
+const CATEGORY_COLORS = ['#C6591A', '#7A1F3D', '#3F7D53', '#2E6F9E', '#9C4212', '#B23A34'];
+function categoryColor_(category) {
+  if (!category) return '#A8998A'; // muted neutral for an uncategorized seva
+  let hash = 0;
+  for (let i = 0; i < category.length; i++) hash = (hash * 31 + category.charCodeAt(i)) >>> 0;
+  return CATEGORY_COLORS[hash % CATEGORY_COLORS.length];
+}
+
+// Compact icon-list style for an event's seva opportunities (matches the
+// "Event Page" mockup): a colored dot per Category, name, and a chevron.
+// Tapping a row expands it in place to the same organized info
+// table + Contact/Notes highlight blocks used on Upcoming Seva and Admin,
+// so this doesn't need its own separate detail view.
+function eventSevaShortlistRow(s) {
+  const max = Number(s['Max Volunteers']) || 0;
+  const count = s.RegisteredCount || 0;
+  const full = s.IsFull;
+  const slotsText = max > 0 ? `${count}/${max}` : `${count}`;
+  const timeText = s['Start Time'] ? `${fmtTime(s['Start Time'])}${s['End Time'] ? '–' + fmtTime(s['End Time']) : ''}` : '';
+  return `
+    <div class="shortlist-item" data-shortlist-item>
+      <div class="shortlist-row">
+        <span class="shortlist-dot" style="background:${categoryColor_(s.Category)};"></span>
+        <span class="shortlist-name">${escapeHtml(s['Seva Name'])}${s['Recurring Pattern ID'] ? '<span class="sub">Recurring</span>' : ''}</span>
+        <span class="shortlist-chevron">›</span>
+      </div>
+      <div class="shortlist-detail hidden">
+        <table class="seva-info-table">
+          <tr><td>Date</td><td>${escapeHtml(fmtDate(s['Date']))}</td></tr>
+          <tr><td>Time</td><td>${escapeHtml(timeText || '—')}</td></tr>
+          <tr><td>Location</td><td>${escapeHtml(s['Location'] || '—')}</td></tr>
+          <tr><td>Registered</td><td>${escapeHtml(slotsText)}</td></tr>
+        </table>
+        ${(s['Contact Person'] || s['Contact Number']) ? `
+          <div class="seva-highlight contact">
+            <span class="icon">📞</span>
+            <div><strong>Contact:</strong> ${escapeHtml(s['Contact Person'] || '')}${s['Contact Number'] ? ' · ' + escapeHtml(s['Contact Number']) : ''}</div>
+          </div>` : ''}
+        ${s['Instructions'] ? `
+          <div class="seva-highlight notes">
+            <span class="icon">📝</span>
+            <div><strong>Notes:</strong> ${escapeHtml(s['Instructions'])}</div>
+          </div>` : ''}
+        <button class="btn ${full ? 'btn-ghost' : 'btn-primary'}" style="margin-top:6px;" ${full ? 'disabled' : ''} data-register="${escapeHtml(s['Seva ID'])}">
+          ${full ? 'Full — Join Waitlist' : 'Register for Seva'}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function bindShortlistToggles(main) {
+  main.querySelectorAll('[data-shortlist-item]').forEach(item => {
+    item.querySelector('.shortlist-row').addEventListener('click', () => {
+      item.querySelector('.shortlist-detail').classList.toggle('hidden');
+      item.classList.toggle('expanded');
+    });
+  });
 }
 
 /* ---------------- Register flow (modal) ---------------- */
@@ -2010,6 +2276,11 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
         <div class="field"><label>End Date</label><input id="ev-end" type="date" value="${isEdit ? escapeHtml(fmtInputDate(existing['End Date'])) : ''}"></div>
       </div>
       <div class="field"><label>Location</label><input id="ev-location" value="${isEdit ? escapeHtml(existing['Location']) : ''}"></div>
+      <div class="field">
+        <label>Banner Image URL</label>
+        <input id="ev-image" value="${isEdit ? escapeHtml(existing['Image URL'] || '') : ''}" placeholder="Optional — paste a link to an image (e.g. from Google Photos, Drive, or any public image URL)">
+        <div id="ev-image-preview" style="margin-top:8px;"></div>
+      </div>
       ${isEdit ? `
       <div class="field"><label>Status</label>
         <select id="ev-status">
@@ -2022,6 +2293,14 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
       <div id="ev-msg"></div>
     `);
     overlay.querySelector('#modal-close').addEventListener('click', () => overlay.remove());
+    const imageInput = overlay.querySelector('#ev-image');
+    const imagePreview = overlay.querySelector('#ev-image-preview');
+    function refreshImagePreview() {
+      const url = imageInput.value.trim();
+      imagePreview.innerHTML = url ? `<img src="${escapeHtml(url)}" alt="" style="width:100%; max-height:140px; object-fit:cover; border-radius:10px; border:1px solid var(--line);" onerror="this.replaceWith(Object.assign(document.createElement('p'), {className:'error-text', textContent:'Could not load an image from that URL.'}))">` : '';
+    }
+    imageInput.addEventListener('input', refreshImagePreview);
+    refreshImagePreview();
     overlay.querySelector('#ev-submit').addEventListener('click', async () => {
       const payload = {
         pin,
@@ -2029,7 +2308,8 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
         description: overlay.querySelector('#ev-desc').value.trim(),
         startDate: overlay.querySelector('#ev-start').value,
         endDate: overlay.querySelector('#ev-end').value,
-        location: overlay.querySelector('#ev-location').value.trim()
+        location: overlay.querySelector('#ev-location').value.trim(),
+        imageUrl: imageInput.value.trim()
       };
       try {
         if (isEdit) {
