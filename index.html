@@ -214,6 +214,28 @@ table.data-table .sub{display:block; font-size:11.5px; color:var(--ink-soft); fo
 .confirm-box.busy{opacity:.5; cursor:wait;}
 .confirm-dash{color:var(--ink-soft); font-size:15px;}
 .confirm-hint{display:block; font-size:10.5px; color:var(--ink-soft); font-weight:400; margin-top:2px; white-space:nowrap;}
+/* ---- Unified status pill (Not Registered / Registered / Confirmed) ----
+   Same three classes/labels used on Upcoming Seva, My Seva, and Admin so a
+   participant's state reads identically everywhere in the app. */
+.status-pill{display:inline-block; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:99px; white-space:nowrap; letter-spacing:.01em;}
+.status-pill.status-not{background:var(--line); color:var(--ink-soft);}
+.status-pill.status-registered{background:var(--primary-soft); color:var(--primary-dark);}
+.status-pill.status-confirmed{background:var(--success-soft); color:var(--success);}
+.confirm-status{margin-top:5px;}
+/* ---- Admin Seva card reorganization ---- */
+.seva-info-table{width:100%; border-collapse:collapse; margin:10px 0; font-size:13.5px;}
+.seva-info-table td{padding:5px 6px; border-bottom:1px solid var(--line); vertical-align:top;}
+.seva-info-table tr:last-child td{border-bottom:none;}
+.seva-info-table td:first-child{color:var(--ink-soft); font-weight:600; width:34%; white-space:nowrap;}
+.seva-highlight{display:flex; gap:8px; align-items:flex-start; border-radius:10px; padding:9px 12px; margin:0 0 8px; font-size:13.5px; line-height:1.4;}
+.seva-highlight .icon{font-size:14px; line-height:1.4;}
+.seva-highlight.contact{background:var(--accent-soft); color:var(--accent);}
+.seva-highlight.notes{background:var(--surface-warm); color:var(--ink-soft); border:1px solid var(--line);}
+/* ---- Identity bar: shown on every participant screen once signed in ---- */
+.identity-bar{margin:6px 0 0; font-size:13px; font-weight:700; color:var(--primary-dark); background:var(--primary-soft); display:inline-block; padding:3px 12px; border-radius:99px;}
+.identity-bar.hidden{display:none;}
+.identity-bar.force-hidden{display:none;}
+.signin-bar{display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:14px; font-size:13.5px;}
 .pill-toggle{display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; -webkit-overflow-scrolling:touch;}
 .pill-toggle .btn{width:auto; white-space:nowrap;}
 .tag-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
@@ -236,6 +258,7 @@ table.data-table .sub{display:block; font-size:11.5px; color:var(--ink-soft); fo
     <div class="eyebrow" id="hdr-eyebrow">Hare Krishna Temple</div>
     <h1 id="hdr-title">Seva Opportunities</h1>
     <p class="tag" id="hdr-tag">Serve with devotion. Participate in seva.</p>
+    <p class="identity-bar hidden" id="identity-bar"></p>
   </header>
   <div class="garland"></div>
   <nav class="tabs" id="nav-tabs">
@@ -297,12 +320,54 @@ function bustCache() { cache.clear(); }
 /* ---------------- Storage ---------------- */
 const store = {
   get me() { try { return JSON.parse(localStorage.getItem('seva_me') || 'null'); } catch (e) { return null; } },
-  set me(v) { localStorage.setItem('seva_me', JSON.stringify(v)); },
-  clearMe() { localStorage.removeItem('seva_me'); },
+  set me(v) { localStorage.setItem('seva_me', JSON.stringify(v)); updateIdentityBar(); },
+  clearMe() { localStorage.removeItem('seva_me'); updateIdentityBar(); },
   get admin() { try { return JSON.parse(sessionStorage.getItem('seva_admin') || 'null'); } catch (e) { return null; } },
   set admin(v) { sessionStorage.setItem('seva_admin', JSON.stringify(v)); },
   clearAdmin() { sessionStorage.removeItem('seva_admin'); }
 };
+// A locally-stored identity (localStorage.seva_me) never expires and never
+// gets re-checked against the sheet on its own -- if the participant row it
+// points at ever stops existing or stops matching (old test data, a sheet
+// edit, etc.), every screen that trusted it would silently misbehave: My
+// Seva throws "Participant not found", and Upcoming Seva just treats the
+// visitor as anonymous with no error at all (see getUpcomingSevaGrouped_,
+// which never throws for a bad id -- it just shows everything as Not
+// Registered). This is the single place that gets checked before either
+// screen trusts store.me, so a stale identity gets cleared automatically
+// instead of failing silently or looping on the same error forever.
+// Returns true if store.me is present AND still valid; false otherwise
+// (and clears it in that case).
+async function validateIdentity() {
+  const me = store.me;
+  if (!me || !me.participantId || !me.mobile) return false;
+  try {
+    const fresh = await api.get('whoAmI', { participantId: me.participantId, mobile: me.mobile });
+    // Self-heal a stale display name too (e.g. corrected via admin later).
+    if (fresh.fullName !== me.fullName) store.me = Object.assign({}, me, { fullName: fresh.fullName });
+    return true;
+  } catch (e) {
+    store.clearMe();
+    return false;
+  }
+}
+// Shows "Signed in as <name>" in the header on every participant screen
+// (Upcoming Seva, Events, My Seva) once a name+mobile has been identified --
+// so it's always visible which profile is active, without opening My Seva.
+// Called from the store.me setter/clearMe above, so it stays correct no
+// matter which flow (sign-up, group sign-up, switch profile) sets it.
+function updateIdentityBar() {
+  const bar = document.getElementById('identity-bar');
+  if (!bar) return;
+  const me = store.me;
+  if (me && me.fullName) {
+    bar.textContent = `Signed in as ${me.fullName}`;
+    bar.classList.remove('hidden');
+  } else {
+    bar.textContent = '';
+    bar.classList.add('hidden');
+  }
+}
 
 let state = { tab: 'home', route: {}, sevaList: [], groupList: [] };
 
@@ -365,6 +430,17 @@ function fmtTimeInput(t) {
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+// Maps the unified 3-state label (see registrationDisplayStatus_ on the
+// backend) to its pill CSS class -- used identically on Upcoming Seva, My
+// Seva, and Admin so the same word always gets the same color everywhere.
+function statusPillClass(status) {
+  if (status === 'Confirmed') return 'status-confirmed';
+  if (status === 'Registered') return 'status-registered';
+  return 'status-not';
+}
+function statusPill(status) {
+  return `<span class="status-pill ${statusPillClass(status)}">${escapeHtml(status)}</span>`;
+}
 const skeletons = (n) => Array(n).fill('<div class="skeleton"></div>').join('');
 
 /* ---------------- Router: persistent shell, main-only re-render ----------------
@@ -375,6 +451,9 @@ function setTab(tab, route) {
   state.tab = tab; state.route = route || {};
   document.querySelectorAll('#nav-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.getElementById('admin-corner-btn').classList.toggle('active', tab === 'admin');
+  // Identity bar is participant-facing only -- suppress it on the Admin tab
+  // even if this device was previously used to sign up as a participant too.
+  document.getElementById('identity-bar').classList.toggle('force-hidden', tab === 'admin');
   renderMain();
 }
 
@@ -495,16 +574,36 @@ function groupRow(g) {
     confirmCell = `<button type="button" class="confirm-box" data-confirm-box data-mode="register"
       data-group-id="${escapeHtml(g.groupId)}" title="Click to sign up for this seva"></button>`;
   }
+  // Text label under the checkbox -- same three words/colors as My Seva and
+  // Admin (see registrationDisplayStatus_ on the backend + statusPill()
+  // above). id lets setConfirmState() flip Registered<->Confirmed in place
+  // after a click, without waiting for the next full re-render.
+  const statusPillHtml = `<div class="confirm-status" id="status-pill-${escapeHtml(g.groupId)}">${statusPill(g.displayStatus)}</div>`;
 
   return `
     <tr class="row-summary" data-group-row="${escapeHtml(g.groupId)}">
       <td class="name-cell"><span class="row-chevron">▸</span>${escapeHtml(g.sevaName)}${recurSub}</td>
       <td>${fmtDate(g.nextDate)}${timeText ? `<span class="sub">${timeText}</span>` : ''}</td>
       <td><span class="slot-text ${full ? 'full' : 'ok'}">${slotsText}</span></td>
-      <td class="confirm-cell">${confirmCell}</td>
+      <td class="confirm-cell">${confirmCell}${statusPillHtml}</td>
     </tr>
     <tr class="row-detail hidden"><td colspan="4">
-      ${g.location ? `<div class="muted" style="margin:8px 0 4px;">📍 ${escapeHtml(g.location)}</div>` : ''}
+      <table class="seva-info-table">
+        <tr><td>Date</td><td>${escapeHtml(fmtDate(g.nextDate))}</td></tr>
+        <tr><td>Time</td><td>${escapeHtml(timeText || '—')}</td></tr>
+        <tr><td>Location</td><td>${escapeHtml(g.location || '—')}</td></tr>
+        <tr><td>Registered</td><td>${escapeHtml(slotsText)}</td></tr>
+      </table>
+      ${(g.contactPerson || g.contactNumber) ? `
+        <div class="seva-highlight contact">
+          <span class="icon">📞</span>
+          <div><strong>Contact:</strong> ${escapeHtml(g.contactPerson || '')}${g.contactNumber ? ' · ' + escapeHtml(g.contactNumber) : ''}</div>
+        </div>` : ''}
+      ${g.instructions ? `
+        <div class="seva-highlight notes">
+          <span class="icon">📝</span>
+          <div><strong>Notes:</strong> ${escapeHtml(g.instructions)}</div>
+        </div>` : ''}
       ${max > 0 ? `
         <div class="slotbar"><div class="fill" style="width:${pct}%"></div></div>
         <div class="slot-text ${full ? 'full' : 'ok'}">${count} / ${max} volunteers${full ? '' : ' &middot; ' + (max - count) + ' slots remaining'}</div>
@@ -520,20 +619,37 @@ function groupRow(g) {
 
 /* ---------------- Home ---------------- */
 async function renderHome(main) {
+  await validateIdentity(); // clears store.me if it's gone stale -- see validateIdentity()
   const me = store.me;
   const cacheKey = 'upcomingSevaGrouped:' + (me ? me.participantId : 'anon');
   if (!cache.has(cacheKey)) main.innerHTML = skeletons(3);
   const params = me && me.participantId && me.mobile ? { participantId: me.participantId, mobile: me.mobile } : {};
   const groups = await cachedGet(cacheKey, () => api.get('upcomingSevaGrouped', params));
   state.groupList = groups;
+  // Sign In / Signed-in-as bar -- lets a participant identify themselves up
+  // front so the table below reflects THEIR registered/confirmed status,
+  // instead of only being detectable after they've already interacted with
+  // one specific seva's checkbox.
+  const signInBar = me
+    ? `<div class="signin-bar"><span>Signed in as <strong>${escapeHtml(me.fullName)}</strong></span><button class="btn btn-ghost small" id="signin-switch">Switch</button></div>`
+    : `<div class="signin-bar"><span class="muted">Not signed in</span><button class="btn btn-outline small" id="signin-btn">Sign In</button></div>`;
   if (!groups.length) {
-    main.innerHTML = `<div class="empty"><div class="glyph">🪔</div><p>No seva opportunities open right now. Please check back soon.</p></div>`;
+    main.innerHTML = signInBar + `<div class="empty"><div class="glyph">🪔</div><p>No seva opportunities open right now. Please check back soon.</p></div>`;
+    bindSignInBar(main);
     return;
   }
-  main.innerHTML = `<section class="block"><h2>Upcoming Seva</h2>${tableShell(['Seva', 'When', 'Slots', 'Sign Up'], groups.map(groupRow).join(''))}</section>`;
+  main.innerHTML = `${signInBar}<section class="block"><h2>Upcoming Seva</h2>${tableShell(['Seva', 'When', 'Slots', 'Sign Up'], groups.map(groupRow).join(''))}</section>`;
+  bindSignInBar(main);
   bindExpandableRows(main);
   bindGroupRegisterButtons();
   bindConfirmBoxes(main);
+}
+
+function bindSignInBar(main) {
+  const signInBtn = main.querySelector('#signin-btn');
+  if (signInBtn) signInBtn.addEventListener('click', openSignInModal);
+  const switchBtn = main.querySelector('#signin-switch');
+  if (switchBtn) switchBtn.addEventListener('click', () => { store.clearMe(); bustCache(); openSignInModal(); });
 }
 
 /* ---- Sign-up checkbox click handling ----
@@ -663,6 +779,8 @@ async function setConfirmState(box, confirmed) {
     box.classList.toggle('confirmed', confirmed);
     box.setAttribute('aria-pressed', confirmed ? 'true' : 'false');
     box.title = confirmed ? 'Confirmed — double-click to undo' : "You're signed up. Click to confirm you'll attend, or double-click to cancel your registration.";
+    const pillWrap = box.closest('td') ? box.closest('td').querySelector('.confirm-status') : null;
+    if (pillWrap) pillWrap.innerHTML = statusPill(confirmed ? 'Confirmed' : 'Registered');
     bustCache();
     toast(confirmed ? 'Confirmed. See you there! 🙏' : 'Confirmation removed.');
   } catch (e) {
@@ -736,6 +854,71 @@ function openModal(innerHtml) {
   wrap.addEventListener('click', e => { if (e.target === wrap) wrap.remove(); });
   document.body.appendChild(wrap);
   return wrap;
+}
+
+// Standalone "Sign In" -- just identifies who's browsing (sets store.me) so
+// Upcoming Seva/My Seva can show this person's own registration state.
+// Unlike renderIdentifyStep (used mid-registration), this has no side
+// effect of its own -- it only verifies via whoAmI and stores the identity.
+function openSignInModal() {
+  const overlay = openModal(`
+    <div class="sheet-head"><h3>Sign In</h3><button class="close-x" id="modal-close">✕</button></div>
+    <div id="modal-body"></div>
+  `);
+  const body = overlay.querySelector('#modal-body');
+  overlay.querySelector('#modal-close').addEventListener('click', () => overlay.remove());
+  renderSignInSearchStep(body, overlay);
+}
+
+function renderSignInSearchStep(body, overlay) {
+  body.innerHTML = `
+    <div class="field">
+      <label>Search your name</label>
+      <input type="text" id="si-search" placeholder="Start typing your name…">
+      <div id="si-results"></div>
+    </div>
+    <p class="muted" style="margin-top:12px;">New here? There's nothing to sign in to yet — just sign up for any seva below, and we'll create your profile automatically.</p>
+  `;
+  let searchTimer;
+  body.querySelector('#si-search').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    const q = e.target.value.trim();
+    const resultsEl = body.querySelector('#si-results');
+    if (q.length < 2) { resultsEl.innerHTML = ''; return; }
+    searchTimer = setTimeout(async () => {
+      const results = await api.get('searchParticipants', { q });
+      resultsEl.innerHTML = results.length ? `<div class="result-list">${results.map(r => `
+        <div class="result-item" data-pid="${escapeHtml(r['Participant ID'])}" data-name="${escapeHtml(r['Full Name'])}">
+          <div class="r-name">${escapeHtml(r['Full Name'])}</div>
+          <div class="r-mobile">Mobile ending ${escapeHtml(r['Mobile Masked'])}</div>
+        </div>`).join('')}</div>` : `<p class="muted" style="margin-top:6px;">No match found.</p>`;
+      resultsEl.querySelectorAll('.result-item').forEach(item => {
+        item.addEventListener('click', () => renderSignInVerifyStep(body, overlay, item.dataset.pid, item.dataset.name));
+      });
+    }, 180);
+  });
+}
+
+function renderSignInVerifyStep(body, overlay, participantId, fullName) {
+  body.innerHTML = `
+    <p>Hi <strong>${escapeHtml(fullName)}</strong> — enter your mobile number to confirm it's you.</p>
+    <div class="field"><label>Mobile Number</label><input type="tel" inputmode="numeric" id="si-mobile" placeholder="Enter the 8 digit mobile number" maxlength="8"></div>
+    <button class="btn btn-primary" id="si-verify-btn">Sign In</button>
+    <div id="si-msg"></div>
+  `;
+  body.querySelector('#si-verify-btn').addEventListener('click', async () => {
+    const mobile = body.querySelector('#si-mobile').value.trim();
+    try {
+      const result = await api.get('whoAmI', { participantId, mobile });
+      store.me = { participantId: result.participantId, fullName: result.fullName, mobile: result.mobile };
+      bustCache();
+      overlay.remove();
+      toast(`Signed in as ${result.fullName}. 🙏`);
+      renderMain();
+    } catch (e) {
+      body.querySelector('#si-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`;
+    }
+  });
 }
 
 function openRegisterModal(sevaId) {
@@ -1030,8 +1213,10 @@ function renderGroupNewParticipantStep(body, group, overlay) {
 
 /* ---------------- My Seva ---------------- */
 async function renderMySeva(main) {
+  main.innerHTML = skeletons(1);
+  const valid = await validateIdentity(); // clears store.me if it's gone stale
   const me = store.me;
-  if (!me || !me.participantId) {
+  if (!valid || !me || !me.participantId) {
     main.innerHTML = `
       <section class="block">
         <h2>My Seva</h2>
@@ -1099,7 +1284,7 @@ async function loadMySevaDashboard(main, participantId, mobile) {
       <tr class="row-summary" data-ms-row="${escapeHtml(c.registrationId)}">
         <td class="name-cell"><span class="row-chevron">▸</span>${escapeHtml(c.sevaName)}</td>
         <td>${fmtDate(c.date)}${timeText ? `<span class="sub">${timeText}</span>` : ''}</td>
-        <td>${escapeHtml(c.status)}${c.attendance && c.attendance !== 'PENDING' ? `<span class="sub">${escapeHtml(c.attendance)}</span>` : ''}</td>
+        <td>${statusPill(c.displayStatus)}${c.attendance && c.attendance !== 'PENDING' ? `<span class="sub">${escapeHtml(c.attendance)}</span>` : ''}</td>
       </tr>
       <tr class="row-detail hidden"><td colspan="3">
         ${c.location ? `<div class="muted" style="margin:8px 0 4px;">📍 ${escapeHtml(c.location)}</div>` : ''}
@@ -1109,8 +1294,80 @@ async function loadMySevaDashboard(main, participantId, mobile) {
       </td></tr>
     `;
   };
-  const rows = (list, isUpcoming) => list.length
-    ? tableShell(['Seva', 'Date', 'Status'], list.map(c => msRow(c, isUpcoming)).join(''))
+
+  // ---- Recurring forecast (Upcoming Seva only) ----
+  // Once a participant is registered for a recurring seva, `data.upcoming`
+  // contains one commitment per already-scheduled dated occurrence (up to
+  // the `occurrences` count booked by registerRecurring, default 4). Rather
+  // than showing those as separate unrelated rows, group them by
+  // recurringPatternId into a single expandable "forecast" row listing the
+  // next cycles together with dates + status, so the recurring commitment
+  // reads as one thing instead of N coincidentally-similar rows.
+  function groupUpcomingByPattern(list) {
+    const byPattern = {};
+    const standalone = [];
+    list.forEach(c => {
+      if (c.recurringPatternId) {
+        (byPattern[c.recurringPatternId] = byPattern[c.recurringPatternId] || []).push(c);
+      } else {
+        standalone.push(c);
+      }
+    });
+    const groups = Object.keys(byPattern).map(patternId => {
+      const occurrences = byPattern[patternId].slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+      return { patternId, sevaName: occurrences[0].sevaName, occurrences };
+    });
+    return { groups, standalone };
+  }
+
+  // Forecast cap: show at most the next 4 cycles even if more are already
+  // scheduled (a participant can call "Register" more than once over time).
+  const FORECAST_LIMIT = 4;
+  function msForecastRow(group) {
+    const all = group.occurrences;
+    const shown = all.slice(0, FORECAST_LIMIT);
+    const moreCount = all.length - shown.length;
+    const next = shown[0];
+    const timeText = next.startTime ? `${fmtTime(next.startTime)}${next.endTime ? '–' + fmtTime(next.endTime) : ''}` : '';
+    const countLabel = `next ${shown.length} date${shown.length === 1 ? '' : 's'}${moreCount > 0 ? ` (+${moreCount} more scheduled)` : ''}`;
+    const dateRows = shown.map(c => {
+      const canReschedule = c.status === 'CONFIRMED';
+      const occTime = c.startTime ? `${fmtTime(c.startTime)}${c.endTime ? '–' + fmtTime(c.endTime) : ''}` : '';
+      return `
+        <div class="reg-row">
+          <div class="who">${escapeHtml(fmtDate(c.date))}${occTime ? `<br><span class="m">${escapeHtml(occTime)}</span>` : ''}</div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+            ${statusPill(c.displayStatus)}
+            ${canReschedule ? `<button class="btn btn-outline small" data-reschedule="${escapeHtml(c.registrationId)}" data-pattern="${escapeHtml(c.recurringPatternId)}" data-seva="${escapeHtml(c.sevaId)}">Change Date</button>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+    return `
+      <tr class="row-summary" data-ms-forecast-row="${escapeHtml(group.patternId)}">
+        <td class="name-cell"><span class="row-chevron">▸</span>${escapeHtml(group.sevaName)}<span class="sub">Recurring · ${escapeHtml(countLabel)}</span></td>
+        <td>${fmtDate(next.date)}${timeText ? `<span class="sub">${timeText}</span>` : ''}</td>
+        <td>${statusPill(next.displayStatus)}</td>
+      </tr>
+      <tr class="row-detail hidden"><td colspan="3">
+        ${next.location ? `<div class="muted" style="margin:8px 0 4px;">📍 ${escapeHtml(next.location)}</div>` : ''}
+        ${next.eventName ? `<div class="muted" style="margin:4px 0 10px;">Event: ${escapeHtml(next.eventName)}</div>` : ''}
+        <div style="font-weight:600; font-size:13px; margin:8px 0 4px;">Forecast — ${escapeHtml(countLabel)}</div>
+        ${dateRows}
+      </td></tr>
+    `;
+  }
+
+  function upcomingRows(list) {
+    if (!list.length) return '<div class="empty" style="padding:20px;">Nothing here yet.</div>';
+    const { groups, standalone } = groupUpcomingByPattern(list);
+    const items = [
+      ...groups.map(g => ({ date: g.occurrences[0].date, html: msForecastRow(g) })),
+      ...standalone.map(c => ({ date: c.date, html: msRow(c, true) }))
+    ].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    return tableShell(['Seva', 'Date', 'Status'], items.map(i => i.html).join(''));
+  }
+  const pastRows = (list) => list.length
+    ? tableShell(['Seva', 'Date', 'Status'], list.map(c => msRow(c, false)).join(''))
     : '<div class="empty" style="padding:20px;">Nothing here yet.</div>';
 
   main.innerHTML = `
@@ -1123,9 +1380,9 @@ async function loadMySevaDashboard(main, participantId, mobile) {
     </section>
     <section class="block">
       <h2>Upcoming Seva</h2>
-      ${rows(data.upcoming, true)}
+      ${upcomingRows(data.upcoming)}
     </section>
-    ${data.past.length ? `<section class="block"><h2>Past Seva</h2>${rows(data.past, false)}</section>` : ''}
+    ${data.past.length ? `<section class="block"><h2>Past Seva</h2>${pastRows(data.past)}</section>` : ''}
   `;
   bindExpandableRows(main);
   document.getElementById('switch-profile').addEventListener('click', () => { store.clearMe(); setTab('myseva'); });
@@ -1274,16 +1531,42 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
   }
 
   // ---- Overview (super admin only) ----
+  // Condensed, expandable row: one seva occurrence per summary row (date +
+  // time sorted, see getSuperAdminOverview_), opening to the full registrant
+  // list -- name, mobile, and the same status pill used everywhere else.
+  function overviewSevaRow(s) {
+    const max = Number(s.maxVolunteers) || 0;
+    const count = s.registeredCount || 0;
+    const full = s.isFull;
+    const slotsText = max > 0 ? `${count}/${max}` : `${count}`;
+    const timeText = s.startTime ? `${fmtTime(s.startTime)}${s.endTime ? '–' + fmtTime(s.endTime) : ''}` : '';
+    const registrantRows = s.registrants.length
+      ? s.registrants.map(p => `
+          <div class="reg-row">
+            <div class="who">${escapeHtml(p.name)}<br><span class="m">${escapeHtml(p.mobile)}</span></div>
+            ${statusPill(p.displayStatus)}
+          </div>`).join('')
+      : '<p class="muted" style="padding:8px 0;">No registrations yet.</p>';
+    return `
+      <tr class="row-summary" data-overview-seva-row="${escapeHtml(s.sevaId)}">
+        <td class="name-cell"><span class="row-chevron">▸</span>${escapeHtml(s.sevaName)}${s.isRecurring ? '<span class="sub">Recurring</span>' : ''}</td>
+        <td>${fmtDate(s.date)}${timeText ? `<span class="sub">${timeText}</span>` : ''}</td>
+        <td><span class="slot-text ${full ? 'full' : 'ok'}">${slotsText}</span></td>
+      </tr>
+      <tr class="row-detail hidden"><td colspan="3">
+        ${s.location ? `<div class="muted" style="margin:8px 0 4px;">📍 ${escapeHtml(s.location)}</div>` : ''}
+        ${registrantRows}
+      </td></tr>
+    `;
+  }
+
   function showOverview() {
     paintTabs('overview');
     body.innerHTML = `
-      <h3 style="margin-bottom:10px;">Today</h3>
-      <div class="stat-grid">
-        <div class="stat"><div class="num">${overview.today.totalSevaOpportunities}</div><div class="lbl">Seva Today</div></div>
-        <div class="stat"><div class="num">${overview.today.totalVolunteers}</div><div class="lbl">Volunteers</div></div>
-        <div class="stat"><div class="num">${overview.today.vacantSlots}</div><div class="lbl">Vacant Slots</div></div>
-        <div class="stat"><div class="num">${overview.today.fullyBooked}</div><div class="lbl">Fully Booked</div></div>
-      </div>
+      <h3 style="margin-bottom:10px;">Seva Summary</h3>
+      ${overview.sevaSummary.length
+        ? tableShell(['Seva', 'Date & Time', 'Registered'], overview.sevaSummary.map(overviewSevaRow).join(''))
+        : '<div class="empty">No upcoming seva scheduled.</div>'}
       <h3 style="margin:16px 0 10px;">Upcoming Events</h3>
       ${overview.upcomingEvents.map(ev => `
         <div class="card">
@@ -1292,6 +1575,7 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
         </div>
       `).join('') || '<p class="muted">No upcoming events.</p>'}
     `;
+    bindExpandableRows(body);
   }
 
   // Returns the seva list this role is allowed to see/manage: everything for
@@ -1307,11 +1591,11 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
   // exposed in the UI (participants themselves only get Change Date, and
   // only within the same recurring pattern -- see My Seva).
   function regRowAdmin(r) {
-    const confirmed = String(r['Participant Confirmed']).toUpperCase() === 'TRUE';
     return `
       <div class="reg-row">
-        <div class="who">${escapeHtml(r['Participant Name'])}<br><span class="m">${escapeHtml(r['Mobile Number'])} · ${escapeHtml(r['Attendance Status'] || 'PENDING')}${confirmed ? ' · <span style="color:var(--success);">✓ Confirmed</span>' : ''}</span></div>
-        <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+        <div class="who">${escapeHtml(r['Participant Name'])}<br><span class="m">${escapeHtml(r['Mobile Number'])}${r['Attendance Status'] && r['Attendance Status'] !== 'PENDING' ? ' · ' + escapeHtml(r['Attendance Status']) : ''}</span></div>
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+          ${statusPill(r.displayStatus)}
           <button class="btn btn-outline small" data-attend="${escapeHtml(r['Registration ID'])}">Mark Attended</button>
           <button class="btn btn-ghost small" data-admin-reschedule="${escapeHtml(r['Registration ID'])}" data-current-seva="${escapeHtml(r['Seva ID'])}">Change Date</button>
           <button class="btn btn-danger small" data-admin-remove="${escapeHtml(r['Registration ID'])}">Remove</button>
@@ -1460,13 +1744,42 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
     body.innerHTML = skeletons(2);
     const seva = await fetchSevaList();
 
+    // Small info table + two highlighted blocks (Contact, Notes) shared by
+    // both the Super Admin and scoped-admin card views below, so a seva card
+    // reads the same way everywhere. Contact and Notes only render when
+    // there's actually something in them -- an empty highlighted box with
+    // nothing to say is just noise.
+    function sevaCardBody(s) {
+      const timeText = s['Start Time'] ? `${fmtTime(s['Start Time'])}${s['End Time'] ? '–' + fmtTime(s['End Time']) : ''}` : '—';
+      const rows = [
+        ['Date', escapeHtml(fmtDate(s['Date']))],
+        ['Time', escapeHtml(timeText)],
+        ['Location', escapeHtml(s['Location'] || '—')],
+        ['Registered', `${s.RegisteredCount}${s['Max Volunteers'] ? '/' + escapeHtml(String(s['Max Volunteers'])) : ''}`],
+        ['Status', escapeHtml(s['Status'] || '')]
+      ];
+      const infoTable = `<table class="seva-info-table">${rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table>`;
+      const hasContact = s['Contact Person'] || s['Contact Number'];
+      const contactBlock = hasContact ? `
+        <div class="seva-highlight contact">
+          <span class="icon">📞</span>
+          <div><strong>Contact:</strong> ${escapeHtml(s['Contact Person'] || '')}${s['Contact Number'] ? ' · ' + escapeHtml(s['Contact Number']) : ''}</div>
+        </div>` : '';
+      const notesBlock = s['Instructions'] ? `
+        <div class="seva-highlight notes">
+          <span class="icon">📝</span>
+          <div><strong>Notes:</strong> ${escapeHtml(s['Instructions'])}</div>
+        </div>` : '';
+      return infoTable + contactBlock + notesBlock;
+    }
+
     if (isSuperAdmin) {
       body.innerHTML = `
         <button class="btn btn-primary" id="new-seva-btn" style="margin-bottom:14px;">+ New Seva Opportunity</button>
         ${seva.length ? seva.map(s => `
           <div class="card">
             <div class="card-title">${escapeHtml(s['Seva Name'])}</div>
-            <div class="meta"><span>📅 ${fmtDate(s['Date'])}</span><span>${s.RegisteredCount}/${s['Max Volunteers'] || '—'} registered</span><span>${escapeHtml(s['Status'])}</span></div>
+            ${sevaCardBody(s)}
             <div style="margin:10px 0;">
               ${(s.Registrations || []).map(regRowAdmin).join('') || '<p class="muted">No registrations yet.</p>'}
             </div>
@@ -1490,7 +1803,7 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
       ${seva.length ? seva.map(s => `
         <div class="card">
           <div class="card-title">${escapeHtml(s['Seva Name'])}</div>
-          <div class="meta"><span>📅 ${fmtDate(s['Date'])}</span><span>${s.RegisteredCount} registered</span></div>
+          ${sevaCardBody(s)}
           <div style="margin:10px 0;">
             ${s.Registrations.map(regRowAdmin).join('') || '<p class="muted">No registrations yet.</p>'}
           </div>
@@ -1555,6 +1868,11 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
         <div class="field"><label>Location</label><input id="ns-location" value="${isEdit ? escapeHtml(existing['Location']) : ''}"></div>
         <div class="field"><label>Max Volunteers</label><input id="ns-max" type="number" value="${isEdit ? escapeHtml(existing['Max Volunteers']) : ''}"></div>
       </div>
+      <div class="row-2">
+        <div class="field"><label>Contact Person</label><input id="ns-contact-person" value="${isEdit ? escapeHtml(existing['Contact Person']) : ''}" placeholder="Optional"></div>
+        <div class="field"><label>Contact Number</label><input id="ns-contact-number" value="${isEdit ? escapeHtml(existing['Contact Number']) : ''}" placeholder="Optional"></div>
+      </div>
+      <div class="field"><label>Notes</label><textarea id="ns-instructions" rows="2" placeholder="Optional — anything volunteers or fellow admins should know">${isEdit ? escapeHtml(existing['Instructions']) : ''}</textarea></div>
       <button class="btn btn-primary" id="ns-submit">${isEdit ? 'Save Changes' : 'Create'}</button>
       ${!isEdit ? '<p class="helper">"One specific week each month" (e.g. 2nd Sunday) is the usual choice for a monthly seva. Pick "Every week" for a weekly seva like every Sunday, or "Just one date" for a single occurrence.</p>' : ''}
       <div id="ns-msg"></div>
@@ -1584,7 +1902,10 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
         startTime: overlay.querySelector('#ns-start').value,
         endTime: overlay.querySelector('#ns-end').value,
         location: overlay.querySelector('#ns-location').value.trim(),
-        maxVolunteers: overlay.querySelector('#ns-max').value
+        maxVolunteers: overlay.querySelector('#ns-max').value,
+        contactPerson: overlay.querySelector('#ns-contact-person').value.trim(),
+        contactNumber: overlay.querySelector('#ns-contact-number').value.trim(),
+        instructions: overlay.querySelector('#ns-instructions').value.trim()
       };
       if (isSuperAdmin && overlay.querySelector('#ns-type')) common.sevaTypeId = overlay.querySelector('#ns-type').value.trim();
       try {
@@ -1828,6 +2149,11 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
         <div class="field"><label>Location</label><input id="rp-location"></div>
         <div class="field"><label>Max Volunteers</label><input id="rp-max" type="number"></div>
       </div>
+      <div class="row-2">
+        <div class="field"><label>Contact Person</label><input id="rp-contact-person" placeholder="Optional"></div>
+        <div class="field"><label>Contact Number</label><input id="rp-contact-number" placeholder="Optional"></div>
+      </div>
+      <div class="field"><label>Notes</label><textarea id="rp-instructions" rows="2" placeholder="Optional — anything volunteers or fellow admins should know"></textarea></div>
       <button class="btn btn-primary" id="rp-submit">Create Recurring Seva</button>
       <p class="helper">"One specific week each month" (e.g. 2nd Sunday) suits most monthly seva. Pick "Every week" for something like every Sunday instead.</p>
       <div id="rp-msg"></div>
@@ -1849,7 +2175,10 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
         startTime: overlay.querySelector('#rp-start').value,
         endTime: overlay.querySelector('#rp-end').value,
         location: overlay.querySelector('#rp-location').value.trim(),
-        maxVolunteers: overlay.querySelector('#rp-max').value
+        maxVolunteers: overlay.querySelector('#rp-max').value,
+        contactPerson: overlay.querySelector('#rp-contact-person').value.trim(),
+        contactNumber: overlay.querySelector('#rp-contact-number').value.trim(),
+        instructions: overlay.querySelector('#rp-instructions').value.trim()
       };
       if (isSuperAdmin) payload.sevaTypeId = overlay.querySelector('#rp-type').value.trim();
       try {
@@ -1906,6 +2235,7 @@ function fmtInputDate(d) {
 }
 
 /* ---------------- Boot ---------------- */
+updateIdentityBar();
 setTab('home');
 </script>
 </body>
