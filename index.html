@@ -1806,7 +1806,7 @@ const DOW_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 // (one-time or recurring) under them, and manage their own recurring patterns.
 async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
   const tabs = isSuperAdmin
-    ? [['overview', 'Overview'], ['seva', 'Seva'], ['events', 'Events'], ['recurring', 'Recurring'], ['reports', 'Reports']]
+    ? [['overview', 'Overview'], ['seva', 'Seva'], ['events', 'Events'], ['recurring', 'Recurring'], ['participants', 'Participants'], ['reports', 'Reports']]
     : [['seva', 'My Seva'], ['events', 'Events'], ['recurring', 'Recurring']];
 
   content.innerHTML = `
@@ -1909,26 +1909,7 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
       });
     });
     scopeEl.querySelectorAll('[data-add-participant]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const sevaId = btn.dataset.addParticipant;
-        const overlay = openModal(`
-          <div class="sheet-head"><h3>Add Participant</h3><button class="close-x" id="modal-close">✕</button></div>
-          <div class="field"><label>Full Name</label><input id="ap-name"></div>
-          <div class="field"><label>Mobile</label><input id="ap-mobile" type="tel" inputmode="numeric" placeholder="Enter the 8 digit mobile number" maxlength="8"></div>
-          <button class="btn btn-primary" id="ap-submit">Add</button>
-          <div id="ap-msg"></div>
-        `);
-        overlay.querySelector('#modal-close').addEventListener('click', () => overlay.remove());
-        overlay.querySelector('#ap-submit').addEventListener('click', async () => {
-          try {
-            await api.post('adminAddParticipant', { pin, sevaId, fullName: overlay.querySelector('#ap-name').value.trim(), mobile: overlay.querySelector('#ap-mobile').value.trim() });
-            bustCache();
-            overlay.remove();
-            toast('Participant added.');
-            refresh();
-          } catch (e) { overlay.querySelector('#ap-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`; }
-        });
-      });
+      btn.addEventListener('click', () => openAdminAddParticipantModal(btn.dataset.addParticipant, refresh));
     });
     scopeEl.querySelectorAll('[data-edit-seva]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1974,7 +1955,95 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
     });
   }
 
-  // Lets an admin move a single participant's registration to any other
+  // "Add Participant" from a seva card. Existing participant: search by
+  // name (no mobile re-entry or verification -- the admin is already
+  // authenticated and picking a specific, already-known record). New
+  // participant: name + mobile, which becomes that person's sign-in for the
+  // participant portal (see findOrCreateParticipant_ in 4_Api_Write.gs).
+  function openAdminAddParticipantModal(sevaId, refresh) {
+    const overlay = openModal(`
+      <div class="sheet-head"><h3>Add Participant</h3><button class="close-x" id="modal-close">✕</button></div>
+      <div style="padding:0 20px 20px;">
+        <div class="pill-toggle" style="margin-bottom:14px;">
+          <button type="button" class="btn small btn-primary" id="aap-tab-existing">Existing Participant</button>
+          <button type="button" class="btn small btn-ghost" id="aap-tab-new">New Participant</button>
+        </div>
+        <div id="aap-body"></div>
+      </div>
+    `);
+    overlay.querySelector('#modal-close').addEventListener('click', () => overlay.remove());
+    const modalBody = overlay.querySelector('#aap-body');
+    const tabExisting = overlay.querySelector('#aap-tab-existing');
+    const tabNew = overlay.querySelector('#aap-tab-new');
+
+    function renderExistingTab() {
+      tabExisting.className = 'btn small btn-primary';
+      tabNew.className = 'btn small btn-ghost';
+      modalBody.innerHTML = `
+        <div class="field"><label>Search participant by name</label><input type="text" id="aap-search" placeholder="Start typing a name…"></div>
+        <div id="aap-results"></div>
+      `;
+      let searchTimer;
+      modalBody.querySelector('#aap-search').addEventListener('input', e => {
+        clearTimeout(searchTimer);
+        const q = e.target.value.trim();
+        const resultsEl = modalBody.querySelector('#aap-results');
+        if (q.length < 2) { resultsEl.innerHTML = ''; return; }
+        searchTimer = setTimeout(async () => {
+          const results = await api.get('searchParticipants', { q });
+          resultsEl.innerHTML = results.length ? `<div class="result-list">${results.map(r => `
+            <div class="result-item" data-pid="${escapeHtml(r['Participant ID'])}" data-name="${escapeHtml(r['Full Name'])}">
+              <div class="r-name">${escapeHtml(r['Full Name'])}</div>
+              <div class="r-mobile">Mobile ending ${escapeHtml(r['Mobile Masked'])}</div>
+            </div>`).join('')}</div>` : `<p class="muted" style="margin-top:6px;">No match found.</p>`;
+          resultsEl.querySelectorAll('.result-item').forEach(item => {
+            item.addEventListener('click', async () => {
+              try {
+                await api.post('adminAddParticipant', { pin, sevaId, participantId: item.dataset.pid });
+                bustCache();
+                overlay.remove();
+                toast(`${item.dataset.name} added. 🙏`);
+                refresh();
+              } catch (e) {
+                resultsEl.insertAdjacentHTML('beforeend', `<div class="error-text">${escapeHtml(e.message)}</div>`);
+              }
+            });
+          });
+        }, 180);
+      });
+    }
+
+    function renderNewTab() {
+      tabExisting.className = 'btn small btn-ghost';
+      tabNew.className = 'btn small btn-primary';
+      modalBody.innerHTML = `
+        <div class="field"><label>Full Name</label><input id="aap-name"></div>
+        <div class="field"><label>Mobile Number</label><input id="aap-mobile" type="tel" inputmode="numeric" placeholder="Enter the 8 digit mobile number" maxlength="8"></div>
+        <p class="muted" style="margin:6px 0 12px;">This mobile number becomes their sign-in when they visit the participant portal.</p>
+        <button class="btn btn-primary" id="aap-submit">Add & Register</button>
+        <div id="aap-msg"></div>
+      `;
+      modalBody.querySelector('#aap-submit').addEventListener('click', async () => {
+        const fullName = modalBody.querySelector('#aap-name').value.trim();
+        const mobile = modalBody.querySelector('#aap-mobile').value.trim();
+        try {
+          await api.post('adminAddParticipant', { pin, sevaId, fullName, mobile });
+          bustCache();
+          overlay.remove();
+          toast(`${fullName} added. 🙏`);
+          refresh();
+        } catch (e) {
+          modalBody.querySelector('#aap-msg').innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`;
+        }
+      });
+    }
+
+    tabExisting.addEventListener('click', renderExistingTab);
+    tabNew.addEventListener('click', renderNewTab);
+    renderExistingTab();
+  }
+
+
   // ACTIVE seva currently visible to them (the same sevaList already loaded
   // for this screen -- already correctly scoped to "my Seva Type" for a
   // scoped admin, or everything for Super Admin, so no extra fetch needed).
@@ -2498,6 +2567,88 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
     });
   }
 
+  // ---- Participants — Super Admin only ----
+  // Lets an admin find a participant directly (rather than going seva by
+  // seva) and register them into any currently open seva from a dropdown --
+  // the same adminAddParticipant_ backend action used on the Seva tab's Add
+  // Participant modal, just entered from the other direction.
+  async function showParticipants() {
+    paintTabs('participants');
+    body.innerHTML = skeletons(3);
+    const [participants, sevaList] = await Promise.all([
+      cachedGet('allParticipants:' + pin, () => api.get('allParticipants', { pin }), 8000),
+      fetchSevaList()
+    ]);
+    const activeSeva = sevaList
+      .filter(s => String(s['Status']).toUpperCase() === 'ACTIVE')
+      .sort((a, b) => {
+        const d = String(a['Date']).localeCompare(String(b['Date']));
+        return d !== 0 ? d : String(a['Start Time']).localeCompare(String(b['Start Time']));
+      });
+    const sevaOptionsHtml = activeSeva.map(s => {
+      const timeText = s['Start Time'] ? ` ${fmtTime(s['Start Time'])}` : '';
+      return `<option value="${escapeHtml(s['Seva ID'])}">${escapeHtml(s['Seva Name'])} — ${escapeHtml(fmtDate(s['Date']))}${escapeHtml(timeText)}</option>`;
+    }).join('');
+
+    function participantRow(p) {
+      return `
+        <tr class="row-summary" data-pt-row="${escapeHtml(p['Participant ID'])}">
+          <td class="name-cell"><span class="row-chevron">▸</span>${escapeHtml(p['Full Name'])}</td>
+          <td>${escapeHtml(p['Mobile Number'])}</td>
+          <td>${escapeHtml(p['Status'] || 'ACTIVE')}</td>
+        </tr>
+        <tr class="row-detail hidden"><td colspan="3">
+          ${p['Email'] ? `<div class="muted" style="margin:4px 0;">✉ ${escapeHtml(p['Email'])}</div>` : ''}
+          <div class="field" style="margin-top:8px;">
+            <label>Assign to Seva</label>
+            <select id="pt-select-${escapeHtml(p['Participant ID'])}">
+              <option value="">Select an open seva…</option>
+              ${sevaOptionsHtml}
+            </select>
+          </div>
+          <button class="btn btn-primary small" style="margin-top:8px;" data-assign-seva="${escapeHtml(p['Participant ID'])}" data-name="${escapeHtml(p['Full Name'])}">Assign</button>
+          <div data-assign-msg="${escapeHtml(p['Participant ID'])}"></div>
+        </td></tr>
+      `;
+    }
+
+    function renderList(query) {
+      const q = (query || '').trim().toLowerCase();
+      const filtered = q
+        ? participants.filter(p => String(p['Full Name']).toLowerCase().indexOf(q) !== -1 || String(p['Mobile Number']).indexOf(q) !== -1)
+        : participants;
+      const listEl = document.getElementById('pt-list');
+      listEl.innerHTML = filtered.length
+        ? tableShell(['Name', 'Mobile', 'Status'], filtered.map(participantRow).join(''))
+        : '<div class="empty">No participants match your search.</div>';
+      bindExpandableRows(listEl);
+      listEl.querySelectorAll('[data-assign-seva]').forEach(assignBtn => {
+        assignBtn.addEventListener('click', async () => {
+          const participantId = assignBtn.dataset.assignSeva;
+          const select = document.getElementById('pt-select-' + participantId);
+          const sevaId = select.value;
+          const msgEl = listEl.querySelector(`[data-assign-msg="${participantId}"]`);
+          if (!sevaId) { msgEl.innerHTML = `<div class="error-text">Please select a seva first.</div>`; return; }
+          try {
+            await api.post('adminAddParticipant', { pin, sevaId, participantId });
+            bustCache();
+            toast(`${assignBtn.dataset.name} assigned. 🙏`);
+            msgEl.innerHTML = `<div class="muted">Assigned ✓</div>`;
+          } catch (e) {
+            msgEl.innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`;
+          }
+        });
+      });
+    }
+
+    body.innerHTML = `
+      <div class="field" style="margin-bottom:14px;"><input type="text" id="pt-search" placeholder="Search participants by name or mobile…"></div>
+      <div id="pt-list"></div>
+    `;
+    body.querySelector('#pt-search').addEventListener('input', e => renderList(e.target.value));
+    renderList('');
+  }
+
   // ---- Reports — Super Admin only ----
   async function showReports() {
     paintTabs('reports');
@@ -2528,6 +2679,7 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
       else if (b.dataset.saView === 'seva') showSeva();
       else if (b.dataset.saView === 'events') showEvents();
       else if (b.dataset.saView === 'recurring') showRecurring();
+      else if (b.dataset.saView === 'participants') showParticipants();
       else showReports();
     });
   });
