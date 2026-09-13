@@ -43,9 +43,14 @@
 *{box-sizing:border-box;}
 html{-webkit-text-size-adjust:100%;}
 body{
-  margin:0; background:var(--bg); color:var(--ink);
+  margin:0; background-color:var(--bg); color:var(--ink);
   font-family:var(--font-body); font-size:16px; line-height:1.5;
   -webkit-font-smoothing:antialiased;
+  /* Faint temple-lattice/lotus watermark across the whole app -- a couple
+     percent opacity, pure CSS (inline SVG data-URI, no network request),
+     so it adds texture without ever affecting load time or readability. */
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23C6591A' stroke-opacity='0.05' stroke-width='1.5'%3E%3Ccircle cx='60' cy='60' r='38'/%3E%3Ccircle cx='60' cy='60' r='4'/%3E%3Cpath d='M60 22 L64 40 L60 60 L56 40 Z'/%3E%3Cpath d='M98 60 L80 64 L60 60 L80 56 Z'/%3E%3Cpath d='M60 98 L56 80 L60 60 L64 80 Z'/%3E%3Cpath d='M22 60 L40 56 L60 60 L40 64 Z'/%3E%3C/g%3E%3C/svg%3E");
+  background-attachment:fixed;
 }
 h1,h2,h3,.display{font-family:var(--font-display); font-weight:700; color:var(--ink); margin:0;}
 button{font-family:inherit;}
@@ -61,8 +66,17 @@ img{max-width:100%;}
     radial-gradient(circle at 20px 9px, var(--accent) 3.5px, transparent 4px) 0 0/24px 14px repeat-x;
 }
 
-/* ---- Layout shell ---- */
-.app{max-width:640px; margin:0 auto; min-height:100vh; background:var(--bg); position:relative;}
+/* ---- Layout shell ----
+   Mobile-first: .app is a single 640px column, identical to a phone screen,
+   which is also literally what phones render (no media query needed below
+   640px -- there's no room for one anyway). On anything wider (tablet,
+   laptop, desktop) the column used to stay pinned at 640px, leaving most
+   of the screen as bare background -- the media queries below let it use
+   the extra room instead, capping out at 1400px so lines of text don't
+   stretch edge-to-edge on very wide monitors. */
+.app{max-width:640px; width:100%; margin:0 auto; min-height:100vh; position:relative;}
+@media (min-width:640px){ .app{max-width:1400px;} }
+@media (min-width:1440px){ .app{box-shadow:0 0 70px rgba(43,33,24,0.10);} }
 header.top{
   background:linear-gradient(180deg, var(--accent) 0%, #611730 100%);
   color:#fff; padding:20px 20px 24px; position:relative;
@@ -95,6 +109,66 @@ section.block{margin-bottom:22px;}
 section.block h2{font-size:19px; margin-bottom:10px;}
 .muted{color:var(--ink-soft); font-size:14px;}
 
+/* ---- Tablet / laptop breakpoint: more breathing room everywhere, and a
+   centered nav instead of one that only scrolls because it has to. ---- */
+@media (min-width:760px){
+  header.top{padding:30px 40px 34px;}
+  header.top .eyebrow{font-size:14px;}
+  header.top h1{font-size:38px;}
+  header.top p.tag{font-size:16px;}
+  .admin-corner-btn{top:22px; right:28px; padding:8px 14px; font-size:13px;}
+  nav.tabs{padding:12px 36px; gap:10px; justify-content:center; overflow-x:visible;}
+  nav.tabs button{font-size:15px; padding:10px 20px;}
+  main{padding:26px 40px 70px;}
+  section.block h2{font-size:22px;}
+}
+
+/* ============================================================
+   DEVOTIONAL HEADER ARTWORK
+   Each tab gets its own header illustration behind the title -- Radha
+   Krishna (peacock feathers, flute, a soft dual "yugal" glow) for
+   Upcoming Seva & My Seva, and the Jagannath-Balabhadra-Subhadra trio
+   (their traditional temple form + a Ratha Yatra chariot wheel) for
+   Events, since that trio's own festival IS a chariot procession -- a
+   natural pairing. Admin keeps a neutral diya/mandala motif, deliberately
+   not deity-specific for a back-office screen.
+   All artwork is original inline SVG set via JS (applyHeaderTheme, near
+   setTab) -- no external image files, so nothing to hotlink, nothing that
+   can fail to load or slow the app down. It sits at low opacity behind a
+   color-matched gradient scrim so header text stays fully legible on top.
+   ============================================================ */
+header.top{overflow:hidden; transition:background 1.2s ease;}
+.hdr-art{position:absolute; inset:0; z-index:0; opacity:.55;}
+.hdr-art svg{width:100%; height:100%; display:block;}
+/* Used instead of the inline SVG when CONFIG.DEITY_IMAGES has a real photo
+   URL for this theme -- see applyHeaderTheme(). */
+.hdr-art.hdr-art-photo{background-size:cover; background-position:center; opacity:.65;}
+.hdr-scrim{position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:linear-gradient(90deg, rgba(20,10,10,0.55) 0%, rgba(20,10,10,0.15) 55%, rgba(20,10,10,0) 100%);}
+.hdr-glow{position:absolute; inset:-30% -10% auto -10%; height:150%; z-index:0; pointer-events:none;
+  background:radial-gradient(ellipse at 78% 25%, rgba(255,214,120,0.30), transparent 60%);
+  animation:glowPulse 7s ease-in-out infinite;}
+@keyframes glowPulse{0%,100%{opacity:.65;} 50%{opacity:1;}}
+/* Gentle marigold-petal shower -- a handful of tiny dots drifting down
+   behind the header text on every screen, regardless of theme. */
+.hdr-petals{position:absolute; inset:0; z-index:1; pointer-events:none; overflow:hidden;}
+.hdr-petals span{position:absolute; top:-12%; width:6px; height:6px; border-radius:50% 0 50% 50%; background:#F4C869; opacity:.5; animation:petalFall linear infinite;}
+.hdr-petals span:nth-child(1){left:6%; animation-delay:0s; animation-duration:8s;}
+.hdr-petals span:nth-child(2){left:22%; animation-delay:1.4s; animation-duration:10s; background:#F1D9E1;}
+.hdr-petals span:nth-child(3){left:40%; animation-delay:2.6s; animation-duration:7.5s;}
+.hdr-petals span:nth-child(4){left:58%; animation-delay:.7s; animation-duration:9.5s; background:#F1D9E1;}
+.hdr-petals span:nth-child(5){left:76%; animation-delay:3.5s; animation-duration:8.5s;}
+.hdr-petals span:nth-child(6){left:90%; animation-delay:1.9s; animation-duration:11s; background:#F1D9E1;}
+@keyframes petalFall{
+  0%{transform:translateY(-20%) translateX(0) rotate(0deg); opacity:0;}
+  12%{opacity:.55;}
+  100%{transform:translateY(420%) translateX(18px) rotate(220deg); opacity:0;}
+}
+.hdr-content{position:relative; z-index:2;}
+#app-header.theme-krishna{background:linear-gradient(165deg, #1B3B63 0%, #2D5F8A 45%, #6E1E42 100%);}
+#app-header.theme-jagannath{background:linear-gradient(165deg, #4A1420 0%, #7A1F3D 45%, #4B2E0A 100%);}
+#app-header.theme-neutral{background:linear-gradient(180deg, var(--accent) 0%, #611730 100%);}
+
 /* ---- Cards ---- */
 .card{
   background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
@@ -104,6 +178,16 @@ section.block h2{font-size:19px; margin-bottom:10px;}
 .card .meta{display:flex; flex-wrap:wrap; gap:9px; margin:7px 0; font-size:13.5px; color:var(--ink-soft);}
 .card .meta span{display:inline-flex; align-items:center; gap:4px;}
 .card .desc{font-size:13.5px; color:var(--ink-soft); margin:7px 0;}
+/* Admin card lists (Seva, Events, Recurring, Overview's Upcoming Events)
+   are plain stacked blocks on mobile -- there's no room for more than one
+   column anyway. On tablet/laptop they lay out as a responsive multi-column
+   grid instead, so the extra screen width shows more at once instead of
+   one narrow column with dead space on either side. */
+.card-grid{display:block;}
+@media (min-width:760px){
+  .card-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:14px; align-items:start;}
+  .card-grid .card{margin-bottom:0;}
+}
 .slotbar{height:7px; border-radius:99px; background:var(--line); overflow:hidden; margin:9px 0 4px;}
 .slotbar .fill{height:100%; background:var(--primary); border-radius:99px;}
 .slot-text{font-size:12.5px; font-weight:600;}
@@ -121,8 +205,16 @@ section.block h2{font-size:19px; margin-bottom:10px;}
   border:none; border-radius:12px; padding:12px 16px; font-family:var(--font-display);
   font-weight:700; font-size:14.5px; cursor:pointer; width:100%;
 }
-.btn-primary{background:var(--primary); color:#fff;}
-.btn-primary:active{background:var(--primary-dark);}
+.btn-primary{background:linear-gradient(135deg, var(--primary), var(--primary-dark)); color:#fff; position:relative; overflow:hidden;}
+/* Subtle diagonal shine sweep on tap/hover -- a small "premium button"
+   touch that costs nothing at rest (the shine only exists mid-animation). */
+.btn-primary::after{
+  content:''; position:absolute; top:0; left:-60%; width:35%; height:100%;
+  background:linear-gradient(115deg, transparent, rgba(255,255,255,0.4), transparent);
+  transform:skewX(-20deg); transition:left .5s ease; pointer-events:none;
+}
+.btn-primary:hover::after, .btn-primary:active::after{left:130%;}
+.btn-primary:active{filter:brightness(0.92);}
 .btn-outline{background:transparent; border:1.5px solid var(--primary); color:var(--primary-dark);}
 .btn-ghost{background:var(--surface-warm); color:var(--ink); border:1px solid var(--line);}
 .btn-danger{background:var(--danger-soft); color:var(--danger);}
@@ -140,10 +232,20 @@ section.block h2{font-size:19px; margin-bottom:10px;}
 .success-text{font-size:13px; color:var(--success); margin-top:8px; font-weight:600;}
 .row-2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
 
-/* ---- Modal / sheet ---- */
+/* ---- Modal / sheet ----
+   Mobile: bottom sheet (slides up from the bottom edge, flat top corners).
+   Tablet/laptop: there's no "bottom edge" reason to anchor it there once
+   there's room to spare, so it becomes a normal centered dialog instead. */
 .overlay{position:fixed; inset:0; background:rgba(43,33,24,0.45); z-index:50; display:flex; align-items:flex-end; justify-content:center;}
+@supports ((backdrop-filter:blur(3px)) or (-webkit-backdrop-filter:blur(3px))){
+  .overlay{-webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);}
+}
 .sheet{background:var(--bg); width:100%; max-width:640px; border-radius:18px 18px 0 0; max-height:88vh; overflow-y:auto; padding:18px 16px 26px; animation:up .13s ease-out;}
 @keyframes up{from{transform:translateY(16px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+@media (min-width:640px){
+  .overlay{align-items:center; padding:24px;}
+  .sheet{max-width:540px; border-radius:18px; max-height:85vh; padding:22px 24px 28px; box-shadow:0 20px 60px rgba(43,33,24,0.25);}
+}
 .sheet-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
 .sheet-head h3{font-size:18px;}
 .close-x{background:var(--surface-warm); border:none; border-radius:99px; width:30px; height:30px; font-size:15px; cursor:pointer; color:var(--ink-soft);}
@@ -163,7 +265,8 @@ section.block h2{font-size:19px; margin-bottom:10px;}
 .empty .glyph{font-size:32px; margin-bottom:8px;}
 
 /* ---- Admin ---- */
-.pin-box{max-width:320px; margin:56px auto; text-align:center;}
+.pin-box{max-width:320px; margin:56px auto; text-align:center; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:28px 22px; box-shadow:var(--shadow);}
+.pin-box .pin-glyph{font-size:30px; margin-bottom:6px;}
 .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:9px;}
 .stat{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:13px; text-align:center;}
 .stat .num{font-family:var(--font-display); font-size:24px; font-weight:700; color:var(--primary-dark);}
@@ -239,7 +342,19 @@ table.data-table .sub{display:block; font-size:11.5px; color:var(--ink-soft); fo
 .identity-bar.force-hidden{display:none;}
 .signin-bar{display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:14px; font-size:13.5px;}
 /* ---- Next Seva hero card (Upcoming Seva, above the view toggle) ---- */
-.hero-card{background:linear-gradient(135deg, var(--primary-soft), var(--surface-warm)); border-radius:var(--radius); padding:16px 18px; margin-bottom:16px; box-shadow:var(--shadow);}
+.hero-card{background:linear-gradient(135deg, var(--primary-soft), var(--surface-warm)); border-radius:var(--radius); padding:16px 18px; margin-bottom:16px; box-shadow:var(--shadow); position:relative; overflow:hidden;}
+/* Slow-rotating gradient "divine glow" ring around the Next Seva card --
+   a thin animated border rather than a flat one-tone rule. Built with a
+   masked pseudo-element (no extra markup) so it works as a drop-in on top
+   of the existing card. */
+.hero-card::after{
+  content:''; position:absolute; inset:0; border-radius:inherit; padding:2px; pointer-events:none;
+  background:conic-gradient(from 0deg, var(--primary), #F4C869, var(--accent), var(--primary));
+  -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor; mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask-composite:exclude;
+  opacity:.45; animation:heroRing 8s linear infinite;
+}
+@keyframes heroRing{to{transform:rotate(360deg);}}
 .hero-eyebrow{font-size:11.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--primary-dark);}
 .hero-title{font-family:var(--font-display); font-size:22px; font-weight:700; color:var(--ink); margin:2px 0 4px;}
 .hero-meta{font-size:13.5px; color:var(--ink-soft); margin-bottom:12px;}
@@ -283,6 +398,14 @@ table.data-table .sub{display:block; font-size:11.5px; color:var(--ink-soft); fo
 .pill-toggle{display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; -webkit-overflow-scrolling:touch;}
 .pill-toggle .btn{width:auto; white-space:nowrap;}
 .tag-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+/* On tablet/laptop, a 7-column calendar or a 2-choice toggle stretched
+   across a 1400px-wide panel just makes every cell/button oversized --
+   cap and center them instead of letting flex/grid fill all the way out. */
+@media (min-width:760px){
+  .view-toggle{max-width:420px; margin-left:auto; margin-right:auto;}
+  .cal-nav, .cal-grid, .cal-legend{max-width:560px; margin-left:auto; margin-right:auto;}
+  .cal-legend{margin-top:-4px;}
+}
 
 .toast{
   position:fixed; bottom:16px; left:50%; transform:translateX(-50%); z-index:80;
@@ -297,12 +420,18 @@ table.data-table .sub{display:block; font-size:11.5px; color:var(--ink-soft); fo
 </head>
 <body>
 <div class="app" id="app">
-  <header class="top">
-    <button class="admin-corner-btn" id="admin-corner-btn" type="button">⚙ Admin</button>
-    <div class="eyebrow" id="hdr-eyebrow">Hare Krishna Temple</div>
-    <h1 id="hdr-title">Seva Opportunities</h1>
-    <p class="tag" id="hdr-tag">Serve with devotion. Participate in seva.</p>
-    <p class="identity-bar hidden" id="identity-bar"></p>
+  <header class="top" id="app-header">
+    <div class="hdr-art" id="hdr-art" aria-hidden="true"></div>
+    <div class="hdr-scrim" aria-hidden="true"></div>
+    <div class="hdr-glow" aria-hidden="true"></div>
+    <div class="hdr-petals" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="hdr-content">
+      <button class="admin-corner-btn" id="admin-corner-btn" type="button">⚙ Admin</button>
+      <div class="eyebrow" id="hdr-eyebrow">Hare Krishna Temple</div>
+      <h1 id="hdr-title">Seva Opportunities</h1>
+      <p class="tag" id="hdr-tag">Serve with devotion. Participate in seva.</p>
+      <p class="identity-bar hidden" id="identity-bar"></p>
+    </div>
   </header>
   <div class="garland"></div>
   <nav class="tabs" id="nav-tabs">
@@ -320,29 +449,70 @@ table.data-table .sub{display:block; font-size:11.5px; color:var(--ink-soft); fo
 const CONFIG = {
   API_URL: 'https://script.google.com/macros/s/AKfycbxONGMsHwUypS-ucqRD_6i2FgyueKlvvuyYVW2fk70fkfgRRW4BQ-iS8KbE11yH1aU_/exec',
   TEMPLE_NAME: 'Hare Krishna Temple',
-  TAGLINE: 'Serve with devotion. Participate in seva.'
+  TAGLINE: 'Serve with devotion. Participate in seva.',
+  // ---- Optional: real header photos ----
+  // Paste a direct image URL (ending in .jpg/.png/.webp etc.) here to use
+  // an actual photo behind each theme's header instead of the built-in
+  // illustration. Leave blank ('') to keep the illustration.
+  //   krishna    -> shown on Upcoming Seva & My Seva (e.g. a Radha Krishna photo)
+  //   jagannath  -> shown on Events & Event Detail (e.g. Jagannath, Balabhadra & Subhadra)
+  // IMPORTANT: only use an image you actually have the right to use --
+  // e.g. a public-domain/Creative-Commons photo from Wikimedia Commons
+  // (commons.wikimedia.org) or Openverse (openverse.org), or your own
+  // temple's own photo. For reliability, upload it to your own hosting
+  // (or Google Drive/GitHub) rather than linking directly to someone
+  // else's website, which can block hotlinking or move/remove the file
+  // without notice.
+  DEITY_IMAGES: {
+    krishna: '',
+    jagannath: ''
+  }
 };
 document.getElementById('hdr-eyebrow').textContent = CONFIG.TEMPLE_NAME;
 document.getElementById('hdr-tag').textContent = CONFIG.TAGLINE;
 
-/* ---------------- API layer ---------------- */
+/* ---------------- API layer ----------------
+   Apps Script Web Apps occasionally hang (cold start, or the underlying
+   spreadsheet momentarily busy with another request) rather than erroring
+   out cleanly -- that's the "sometimes never loads" symptom. Every call
+   now has a hard timeout so it fails into a visible, retryable error
+   instead of spinning forever. GET requests (reads) are also safe to
+   silently retry once on a timeout/network drop, since they don't change
+   any data; POST requests (writes) are not auto-retried, since re-sending
+   a write that actually succeeded server-side but was just slow to
+   respond could double-apply it. */
+const API_TIMEOUT_MS = 20000;
+
+async function fetchJson_(url, options, allowRetry) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, Object.assign({}, options, { signal: controller.signal }));
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || 'Something went wrong.');
+    return json.data;
+  } catch (err) {
+    if (allowRetry && (err.name === 'AbortError' || err instanceof TypeError)) {
+      return fetchJson_(url, options, false);
+    }
+    if (err.name === 'AbortError') throw new Error('The server is taking too long to respond. Please try again.');
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const api = {
   async get(action, params) {
     const qs = new URLSearchParams(Object.assign({ action }, params || {})).toString();
-    const res = await fetch(`${CONFIG.API_URL}?${qs}`);
-    const json = await res.json();
-    if (!json.success) throw new Error(json.error || 'Something went wrong.');
-    return json.data;
+    return fetchJson_(`${CONFIG.API_URL}?${qs}`, {}, /* allowRetry */ true);
   },
   async post(action, payload) {
-    const res = await fetch(CONFIG.API_URL, {
+    return fetchJson_(CONFIG.API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight to Apps Script
       body: JSON.stringify(Object.assign({ action }, payload || {}))
-    });
-    const json = await res.json();
-    if (!json.success) throw new Error(json.error || 'Something went wrong.');
-    return json.data;
+    }, /* allowRetry */ false);
   }
 };
 
@@ -489,6 +659,157 @@ function statusPill(status) {
   return `<span class="status-pill ${statusPillClass(status)}">${escapeHtml(status)}</span>`;
 }
 const skeletons = (n) => Array(n).fill('<div class="skeleton"></div>').join('');
+// Local yyyy-MM-dd "today" for admin-side history filtering (Seva/Events
+// tabs) -- this only decides what's shown by default vs. behind "Show
+// History", so being off by a few hours around midnight in the admin's own
+// timezone doesn't matter the way it would for the backend's authoritative
+// date logic (todayStr_ in 2_Utils.gs), which everything else relies on.
+function todayLocalStr() {
+  const d = new Date();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mo}-${day}`;
+}
+
+/* ---------------- Devotional header artwork ----------------
+   Original inline SVG (no external images) swapped into #hdr-art behind
+   the header title, themed per tab -- see the "DEVOTIONAL HEADER ARTWORK"
+   CSS block for the reasoning behind which tab gets which theme. */
+const HDR_ART_KRISHNA = `
+<svg viewBox="0 0 400 200" preserveAspectRatio="xMaxYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="kGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#6FA8D8" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#6FA8D8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="rGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#F4C869" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#F4C869" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="featherGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2E6F5E"/>
+      <stop offset="55%" stop-color="#2D5F8A"/>
+      <stop offset="100%" stop-color="#F4C869"/>
+    </linearGradient>
+  </defs>
+  <circle cx="255" cy="95" r="95" fill="url(#kGlow)"/>
+  <circle cx="330" cy="110" r="85" fill="url(#rGlow)"/>
+  <g opacity="0.9" transform="translate(300,8) rotate(8)">
+    <g transform="rotate(-18)"><path d="M0 90 C -6 40, 6 8, 0 -6 C -22 6, -30 42, -18 88 Z" fill="url(#featherGrad)"/><ellipse cx="0" cy="4" rx="7" ry="11" fill="#F4C869" opacity=".8"/><ellipse cx="0" cy="4" rx="3.5" ry="6" fill="#1B3B63"/></g>
+    <g><path d="M0 96 C -6 44, 6 8, 0 -8 C -22 6, -30 46, -18 94 Z" fill="url(#featherGrad)"/><ellipse cx="0" cy="2" rx="7.5" ry="12" fill="#F4C869" opacity=".85"/><ellipse cx="0" cy="2" rx="4" ry="6.5" fill="#1B3B63"/></g>
+    <g transform="rotate(18)"><path d="M0 90 C -6 40, 6 8, 0 -6 C -22 6, -30 42, -18 88 Z" fill="url(#featherGrad)"/><ellipse cx="0" cy="4" rx="7" ry="11" fill="#F4C869" opacity=".8"/><ellipse cx="0" cy="4" rx="3.5" ry="6" fill="#1B3B63"/></g>
+    <g transform="rotate(36)"><path d="M0 84 C -5 38, 5 8, 0 -4 C -20 6, -27 40, -16 82 Z" fill="url(#featherGrad)" opacity=".85"/><ellipse cx="0" cy="6" rx="6" ry="9.5" fill="#F4C869" opacity=".75"/><ellipse cx="0" cy="6" rx="3" ry="5" fill="#1B3B63"/></g>
+  </g>
+  <g transform="translate(215,150) rotate(-24)">
+    <rect x="0" y="0" width="120" height="9" rx="4.5" fill="#B8792E"/>
+    <circle cx="26" cy="4.5" r="1.6" fill="#3A2410"/>
+    <circle cx="42" cy="4.5" r="1.6" fill="#3A2410"/>
+    <circle cx="58" cy="4.5" r="1.6" fill="#3A2410"/>
+    <circle cx="74" cy="4.5" r="1.6" fill="#3A2410"/>
+    <circle cx="90" cy="4.5" r="1.6" fill="#3A2410"/>
+  </g>
+  <g transform="translate(345,168)" opacity=".9">
+    <path d="M0 0 C -14 -4 -22 -16 -18 -28 C -8 -22 -2 -12 0 0 Z" fill="#F1D9E1"/>
+    <path d="M0 0 C 14 -4 22 -16 18 -28 C 8 -22 2 -12 0 0 Z" fill="#F1D9E1"/>
+    <path d="M0 0 C -6 -14 -4 -26 0 -34 C 4 -26 6 -14 0 0 Z" fill="#F4C869"/>
+  </g>
+</svg>`;
+
+const HDR_ART_JAGANNATH = `
+<svg viewBox="0 0 400 200" preserveAspectRatio="xMaxYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="jGlow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#F4C869" stop-opacity=".5"/>
+      <stop offset="100%" stop-color="#F4C869" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="290" cy="90" r="110" fill="url(#jGlow)"/>
+  <g transform="translate(340,168)" opacity=".85">
+    <circle r="26" fill="none" stroke="#F4C869" stroke-width="4"/>
+    <circle r="4" fill="#F4C869"/>
+    <g stroke="#F4C869" stroke-width="2.5">
+      <line x1="0" y1="-26" x2="0" y2="26"/><line x1="-26" y1="0" x2="26" y2="0"/>
+      <line x1="-18" y1="-18" x2="18" y2="18"/><line x1="-18" y1="18" x2="18" y2="-18"/>
+    </g>
+  </g>
+  <g transform="translate(215,52)">
+    <g transform="translate(-58,20)">
+      <path d="M-20 70 Q-24 10 0 4 Q24 10 20 70 Z" fill="#FBF3E4"/>
+      <circle cx="-9" cy="26" r="8.5" fill="#fff" stroke="#7A1F3D" stroke-width="1.4"/>
+      <circle cx="9" cy="26" r="8.5" fill="#fff" stroke="#7A1F3D" stroke-width="1.4"/>
+      <circle cx="-9" cy="26" r="3.4" fill="#2B2118"/>
+      <circle cx="9" cy="26" r="3.4" fill="#2B2118"/>
+      <path d="M-11 42 Q0 50 11 42" fill="none" stroke="#B23A34" stroke-width="2" stroke-linecap="round"/>
+      <path d="M-16 -2 Q0 -14 16 -2" fill="none" stroke="#C6591A" stroke-width="4" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(0,8)">
+      <path d="M-24 82 Q-29 8 0 2 Q29 8 24 82 Z" fill="#1B1B1E"/>
+      <circle cx="-10.5" cy="30" r="10" fill="#fff" stroke="#F4C869" stroke-width="1.6"/>
+      <circle cx="10.5" cy="30" r="10" fill="#fff" stroke="#F4C869" stroke-width="1.6"/>
+      <circle cx="-10.5" cy="30" r="4" fill="#1B1B1E"/>
+      <circle cx="10.5" cy="30" r="4" fill="#1B1B1E"/>
+      <path d="M-13 50 Q0 60 13 50" fill="none" stroke="#F4C869" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M-19 -4 Q0 -18 19 -4" fill="none" stroke="#F4C869" stroke-width="4.5" stroke-linecap="round"/>
+      <circle cx="0" cy="-16" r="4" fill="#F4C869"/>
+    </g>
+    <g transform="translate(56,26)">
+      <path d="M-17 60 Q-20 8 0 3 Q20 8 17 60 Z" fill="#F4C869"/>
+      <circle cx="-7.5" cy="22" r="7" fill="#fff" stroke="#7A1F3D" stroke-width="1.2"/>
+      <circle cx="7.5" cy="22" r="7" fill="#fff" stroke="#7A1F3D" stroke-width="1.2"/>
+      <circle cx="-7.5" cy="22" r="2.8" fill="#2B2118"/>
+      <circle cx="7.5" cy="22" r="2.8" fill="#2B2118"/>
+      <path d="M-9 36 Q0 43 9 36" fill="none" stroke="#B23A34" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M-13 -2 Q0 -12 13 -2" fill="none" stroke="#B23A34" stroke-width="3.5" stroke-linecap="round"/>
+    </g>
+  </g>
+  <rect x="130" y="150" width="180" height="10" rx="3" fill="#F4C869" opacity=".55"/>
+  <rect x="122" y="160" width="196" height="7" rx="3" fill="#F4C869" opacity=".35"/>
+</svg>`;
+
+const HDR_ART_NEUTRAL = `
+<svg viewBox="0 0 400 200" preserveAspectRatio="xMaxYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="nGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#F4C869" stop-opacity=".45"/>
+      <stop offset="100%" stop-color="#F4C869" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="300" cy="90" r="100" fill="url(#nGlow)"/>
+  <g stroke="#F4C869" stroke-width="1.4" fill="none" opacity=".6">
+    <circle cx="330" cy="70" r="34"/>
+    <circle cx="330" cy="70" r="22"/>
+  </g>
+  <g transform="translate(330,150)">
+    <path d="M-30 6 Q0 -22 30 6 Q10 18 0 8 Q-10 18 -30 6 Z" fill="#C6591A"/>
+    <path d="M-2 -6 Q4 -18 0 -30 Q-6 -18 -2 -6 Z" fill="#F4C869"/>
+  </g>
+</svg>`;
+
+const HEADER_THEMES = { home: 'krishna', myseva: 'krishna', events: 'jagannath', event: 'jagannath', admin: 'neutral' };
+const HEADER_ART = { krishna: HDR_ART_KRISHNA, jagannath: HDR_ART_JAGANNATH, neutral: HDR_ART_NEUTRAL };
+let currentHeaderTheme = null;
+function applyHeaderTheme(tab) {
+  const theme = HEADER_THEMES[tab] || 'neutral';
+  if (theme === currentHeaderTheme) return;
+  currentHeaderTheme = theme;
+  const header = document.getElementById('app-header');
+  header.classList.remove('theme-krishna', 'theme-jagannath', 'theme-neutral');
+  header.classList.add('theme-' + theme);
+  const art = document.getElementById('hdr-art');
+  // A real photo (pasted into CONFIG.DEITY_IMAGES) takes priority over the
+  // built-in illustration -- see the comment on DEITY_IMAGES above for
+  // where to legally source one. Falls back to the illustration if blank.
+  const photoUrl = CONFIG.DEITY_IMAGES && CONFIG.DEITY_IMAGES[theme];
+  if (photoUrl) {
+    art.innerHTML = '';
+    art.classList.add('hdr-art-photo');
+    art.style.backgroundImage = `url("${photoUrl}")`;
+  } else {
+    art.classList.remove('hdr-art-photo');
+    art.style.backgroundImage = '';
+    art.innerHTML = HEADER_ART[theme] || '';
+  }
+}
 
 /* ---------------- Router: persistent shell, main-only re-render ----------------
    The header/nav are built once in the static HTML above and never touched
@@ -498,6 +819,7 @@ function setTab(tab, route) {
   state.tab = tab; state.route = route || {};
   document.querySelectorAll('#nav-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.getElementById('admin-corner-btn').classList.toggle('active', tab === 'admin');
+  applyHeaderTheme(tab);
   // Identity bar is participant-facing only -- suppress it on the Admin tab
   // even if this device was previously used to sign up as a participant too.
   document.getElementById('identity-bar').classList.toggle('force-hidden', tab === 'admin');
@@ -638,8 +960,30 @@ function groupRow(g) {
 
 /* ---------------- Home ---------------- */
 async function renderHome(main) {
-  await validateIdentity(); // clears store.me if it's gone stale -- see validateIdentity()
-  const me = store.me;
+  // Identity validation and the seva list used to be fetched sequentially
+  // (whoAmI, THEN upcomingSevaGrouped) -- two full round trips back to back
+  // before anything could render. They're independent requests, so fire
+  // them together instead; the common case (a still-valid signed-in
+  // participant, or nobody signed in at all) now only waits as long as the
+  // slower of the two, roughly halving Home's load time.
+  const me0 = store.me;
+  const optimisticParams = me0 && me0.participantId && me0.mobile ? { participantId: me0.participantId, mobile: me0.mobile } : {};
+  const cacheKey0 = 'upcomingSevaGrouped:' + (me0 ? me0.participantId : 'anon');
+  if (!cache.has(cacheKey0)) main.innerHTML = skeletons(3);
+
+  const groupsPromise = cachedGet(cacheKey0, () => api.get('upcomingSevaGrouped', optimisticParams));
+  const identityPromise = me0 ? validateIdentity() : Promise.resolve(true);
+  let [groups, stillValid] = await Promise.all([groupsPromise, identityPromise]);
+
+  // Rare path: the locally-stored identity turned out to be stale (cleared
+  // by validateIdentity above). The groups we already fetched were
+  // personalized for a participant that no longer checks out, so refetch
+  // once, anonymously, rather than show wrong Registered/Confirmed states.
+  if (me0 && !stillValid) {
+    groups = await api.get('upcomingSevaGrouped', {});
+  }
+
+  const me = stillValid ? store.me : null;
   const params = me && me.participantId && me.mobile ? { participantId: me.participantId, mobile: me.mobile } : {};
 
   // Sign In / Signed-in-as bar -- lets a participant identify themselves up
@@ -656,15 +1000,11 @@ async function renderHome(main) {
       <button type="button" class="vt-btn ${state.calView === 'calendar' ? 'active' : ''}" data-view="calendar">📅 Calendar View</button>
     </div>`;
 
-  // Fetched once, up front, regardless of which view is active -- the Next
-  // Seva hero card sits above both List and Calendar view, and groups[0] is
-  // already the soonest upcoming seva (getUpcomingSevaGrouped_ sorts
-  // ascending by date). state.groupList is also what openGroupRegisterModal
-  // looks the hero's group up in, so it needs to be set before either
-  // view's buttons get bound.
-  const cacheKey = 'upcomingSevaGrouped:' + (me ? me.participantId : 'anon');
-  if (!cache.has(cacheKey)) main.innerHTML = skeletons(3);
-  const groups = await cachedGet(cacheKey, () => api.get('upcomingSevaGrouped', params));
+  // groups was already fetched above (in parallel with identity
+  // validation). groups[0] is the soonest upcoming seva
+  // (getUpcomingSevaGrouped_ sorts ascending by date) and powers the Next
+  // Seva hero card above both List and Calendar view. state.groupList is
+  // also what openGroupRegisterModal looks the hero's group up in.
   state.groupList = groups;
   const heroCard = renderNextSevaHero(groups[0]);
 
@@ -1479,39 +1819,54 @@ function renderGroupNewParticipantStep(body, group, overlay) {
 
 /* ---------------- My Seva ---------------- */
 async function renderMySeva(main) {
-  main.innerHTML = skeletons(1);
-  const valid = await validateIdentity(); // clears store.me if it's gone stale
   const me = store.me;
-  if (!valid || !me || !me.participantId) {
-    main.innerHTML = `
-      <section class="block">
-        <h2>My Seva</h2>
-        <p class="muted">Enter your details to see your seva commitments.</p>
-        <div class="field"><label>Search your name</label><input type="text" id="ms-search" placeholder="Start typing your name…"></div>
-        <div id="ms-results"></div>
-      </section>
-    `;
-    let t;
-    document.getElementById('ms-search').addEventListener('input', e => {
-      clearTimeout(t);
-      const q = e.target.value.trim();
-      const el = document.getElementById('ms-results');
-      if (q.length < 2) { el.innerHTML = ''; return; }
-      t = setTimeout(async () => {
-        const results = await api.get('searchParticipants', { q });
-        el.innerHTML = results.length ? `<div class="result-list">${results.map(r => `
-          <div class="result-item" data-pid="${escapeHtml(r['Participant ID'])}" data-name="${escapeHtml(r['Full Name'])}">
-            <div class="r-name">${escapeHtml(r['Full Name'])}</div>
-            <div class="r-mobile">Mobile ending ${escapeHtml(r['Mobile Masked'])}</div>
-          </div>`).join('')}</div>` : `<p class="muted">No match found.</p>`;
-        el.querySelectorAll('.result-item').forEach(item => {
-          item.addEventListener('click', () => renderMySevaVerify(main, item.dataset.pid, item.dataset.name));
-        });
-      }, 180);
-    });
+  if (!me || !me.participantId || !me.mobile) {
+    renderMySevaSearchPrompt(main);
     return;
   }
-  await loadMySevaDashboard(main, me.participantId, me.mobile);
+  // getParticipantDashboard_ on the backend already verifies this
+  // participantId/mobile pair and throws a clear error if it doesn't check
+  // out -- calling validateIdentity() first used to do that exact same
+  // verification as a separate round trip before this one. Just attempt
+  // the dashboard load directly and fall back to the search prompt only if
+  // it actually turns out to be stale; this cuts My Seva's load time
+  // roughly in half for the common case of a valid, signed-in participant.
+  main.innerHTML = skeletons(1);
+  try {
+    await loadMySevaDashboard(main, me.participantId, me.mobile);
+  } catch (e) {
+    store.clearMe();
+    renderMySevaSearchPrompt(main);
+  }
+}
+
+function renderMySevaSearchPrompt(main) {
+  main.innerHTML = `
+    <section class="block">
+      <h2>My Seva</h2>
+      <p class="muted">Enter your details to see your seva commitments.</p>
+      <div class="field"><label>Search your name</label><input type="text" id="ms-search" placeholder="Start typing your name…"></div>
+      <div id="ms-results"></div>
+    </section>
+  `;
+  let t;
+  document.getElementById('ms-search').addEventListener('input', e => {
+    clearTimeout(t);
+    const q = e.target.value.trim();
+    const el = document.getElementById('ms-results');
+    if (q.length < 2) { el.innerHTML = ''; return; }
+    t = setTimeout(async () => {
+      const results = await api.get('searchParticipants', { q });
+      el.innerHTML = results.length ? `<div class="result-list">${results.map(r => `
+        <div class="result-item" data-pid="${escapeHtml(r['Participant ID'])}" data-name="${escapeHtml(r['Full Name'])}">
+          <div class="r-name">${escapeHtml(r['Full Name'])}</div>
+          <div class="r-mobile">Mobile ending ${escapeHtml(r['Mobile Masked'])}</div>
+        </div>`).join('')}</div>` : `<p class="muted">No match found.</p>`;
+      el.querySelectorAll('.result-item').forEach(item => {
+        item.addEventListener('click', () => renderMySevaVerify(main, item.dataset.pid, item.dataset.name));
+      });
+    }, 180);
+  });
 }
 
 function renderMySevaVerify(main, participantId, fullName) {
@@ -1543,9 +1898,9 @@ async function loadMySevaDashboard(main, participantId, mobile) {
   // and only when the seva was generated from a recurring pattern (so
   // there's a well-defined set of alternate dates to move to). Cancelling
   // or moving to an unrelated seva stays admin/super-admin only.
-  const msRow = (c, isUpcoming) => {
+  const msRow = (c) => {
     const timeText = c.startTime ? `${fmtTime(c.startTime)}${c.endTime ? '–' + fmtTime(c.endTime) : ''}` : '';
-    const canReschedule = isUpcoming && c.status === 'CONFIRMED' && c.recurringPatternId;
+    const canReschedule = c.status === 'CONFIRMED' && c.recurringPatternId;
     return `
       <tr class="row-summary" data-ms-row="${escapeHtml(c.registrationId)}">
         <td class="name-cell"><span class="row-chevron">▸</span>${escapeHtml(c.sevaName)}</td>
@@ -1570,7 +1925,7 @@ async function loadMySevaDashboard(main, participantId, mobile) {
             <div><strong>Notes:</strong> ${escapeHtml(c.instructions)}</div>
           </div>` : ''}
         ${canReschedule ? `<button class="btn btn-outline small" style="margin-top:8px;" data-reschedule="${escapeHtml(c.registrationId)}" data-pattern="${escapeHtml(c.recurringPatternId)}" data-seva="${escapeHtml(c.sevaId)}">Change Date</button>` : ''}
-        ${isUpcoming && c.status === 'CONFIRMED' && !c.recurringPatternId ? `<p class="muted" style="margin-top:8px;">Need to change or cancel this? Please contact the seva coordinator.</p>` : ''}
+        ${c.status === 'CONFIRMED' && !c.recurringPatternId ? `<p class="muted" style="margin-top:8px;">Need to change or cancel this? Please contact the seva coordinator.</p>` : ''}
       </td></tr>
     `;
   };
@@ -1655,13 +2010,10 @@ async function loadMySevaDashboard(main, participantId, mobile) {
     const { groups, standalone } = groupUpcomingByPattern(list);
     const items = [
       ...groups.map(g => ({ date: g.occurrences[0].date, html: msForecastRow(g) })),
-      ...standalone.map(c => ({ date: c.date, html: msRow(c, true) }))
+      ...standalone.map(c => ({ date: c.date, html: msRow(c) }))
     ].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
     return tableShell(['Seva', 'Date', 'Status'], items.map(i => i.html).join(''));
   }
-  const pastRows = (list) => list.length
-    ? tableShell(['Seva', 'Date', 'Status'], list.map(c => msRow(c, false)).join(''))
-    : '<div class="empty" style="padding:20px;">Nothing here yet.</div>';
 
   main.innerHTML = `
     <section class="block">
@@ -1675,7 +2027,6 @@ async function loadMySevaDashboard(main, participantId, mobile) {
       <h2>Upcoming Seva</h2>
       ${upcomingRows(data.upcoming)}
     </section>
-    ${data.past.length ? `<section class="block"><h2>Past Seva</h2>${pastRows(data.past)}</section>` : ''}
   `;
   bindExpandableRows(main);
   document.getElementById('switch-profile').addEventListener('click', () => { store.clearMe(); setTab('myseva'); });
@@ -1760,6 +2111,7 @@ async function renderAdmin(main) {
   if (!session) {
     main.innerHTML = `
       <div class="pin-box">
+        <div class="pin-glyph">🪔</div>
         <h2 style="margin-bottom:10px;">Admin Login</h2>
         <p class="muted" style="margin-bottom:16px;">Enter your admin PIN.</p>
         <div class="field"><input type="password" id="admin-pin" placeholder="PIN" inputmode="numeric"></div>
@@ -1816,6 +2168,32 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
     <div id="sa-body"></div>
   `;
   const body = content.querySelector('#sa-body');
+  // Shared across the Seva and Events sub-tabs: OFF by default (today +
+  // upcoming only, ascending), so admins see the same "what's actually
+  // coming up" view as participants unless they deliberately ask for
+  // history. Resets to OFF each time the Admin tab is re-entered.
+  let showHistory = false;
+
+  function historyToggleHtml() {
+    return `<label class="history-toggle" style="display:inline-flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; user-select:none;">
+      <input type="checkbox" id="sa-show-history" ${showHistory ? 'checked' : ''}> Show History
+    </label>`;
+  }
+  function bindHistoryToggle(refresh) {
+    const cb = body.querySelector('#sa-show-history');
+    if (!cb) return;
+    cb.addEventListener('change', () => { showHistory = cb.checked; refresh(); });
+  }
+  // Filters a list of date-bearing rows (Seva Opportunities or Events) down
+  // to today-and-upcoming, ascending by date -- unless showHistory is on,
+  // in which case everything is returned, still ascending, so past rows
+  // simply appear at the top rather than being sorted separately.
+  function filterAndSortByDate(list, dateField) {
+    const today = todayLocalStr();
+    const withDate = list.filter(function (row) { return row[dateField]; });
+    const visible = showHistory ? withDate : withDate.filter(function (row) { return String(row[dateField]) >= today; });
+    return visible.sort(function (a, b) { return String(a[dateField]).localeCompare(String(b[dateField])); });
+  }
 
   function paintTabs(active) {
     content.querySelectorAll('[data-sa-view]').forEach(b => {
@@ -1861,12 +2239,12 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
         ? tableShell(['Seva', 'Date & Time', 'Registered'], overview.sevaSummary.map(overviewSevaRow).join(''))
         : '<div class="empty">No upcoming seva scheduled.</div>'}
       <h3 style="margin:16px 0 10px;">Upcoming Events</h3>
-      ${overview.upcomingEvents.map(ev => `
+      ${overview.upcomingEvents.length ? `<div class="card-grid">${overview.upcomingEvents.map(ev => `
         <div class="card">
           <div class="card-title">${escapeHtml(ev.eventName)}</div>
           <div class="meta"><span>${ev.sevaOpportunities} seva</span><span>${ev.registrations} registrations</span><span>${ev.vacantSlots} vacant</span></div>
         </div>
-      `).join('') || '<p class="muted">No upcoming events.</p>'}
+      `).join('')}</div>` : '<p class="muted">No upcoming events.</p>'}
     `;
     bindExpandableRows(body);
   }
@@ -2050,8 +2428,12 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
   // Unlike the participant-facing My Seva "Change Date", this is NOT limited
   // to the same recurring pattern -- an admin can move someone to any seva.
   function openAdminRescheduleModal(ctx) {
+    const today = todayLocalStr();
+    // Never offer a past date as a reschedule target, even if the caller's
+    // sevaList currently includes history (admin had "Show History" on) --
+    // moving someone's registration into the past never makes sense.
     const candidates = ctx.sevaList
-      .filter(s => String(s['Seva ID']) !== String(ctx.currentSevaId) && String(s['Status']).toUpperCase() === 'ACTIVE')
+      .filter(s => String(s['Seva ID']) !== String(ctx.currentSevaId) && String(s['Status']).toUpperCase() === 'ACTIVE' && String(s['Date']) >= today)
       .sort((a, b) => String(a['Date']).localeCompare(String(b['Date'])));
     const overlay = openModal(`
       <div class="sheet-head"><h3>Change Date</h3><button class="close-x" id="modal-close">✕</button></div>
@@ -2104,7 +2486,10 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
   async function showSeva() {
     paintTabs('seva');
     body.innerHTML = skeletons(2);
-    const seva = await fetchSevaList();
+    const allSeva = await fetchSevaList();
+    // Today-and-upcoming by default, ascending; "Show History" reveals past
+    // dated seva too (still ascending, so it simply appears at the top).
+    const seva = filterAndSortByDate(allSeva, 'Date');
 
     // Small info table + two highlighted blocks (Contact, Notes) shared by
     // both the Super Admin and scoped-admin card views below, so a seva card
@@ -2135,10 +2520,15 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
       return infoTable + contactBlock + notesBlock;
     }
 
+    const headerBar = `<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+      <button class="btn btn-primary" id="new-seva-btn">+ New Seva Opportunity</button>
+      ${historyToggleHtml()}
+    </div>`;
+
     if (isSuperAdmin) {
       body.innerHTML = `
-        <button class="btn btn-primary" id="new-seva-btn" style="margin-bottom:14px;">+ New Seva Opportunity</button>
-        ${seva.length ? seva.map(s => `
+        ${headerBar}
+        ${seva.length ? `<div class="card-grid">${seva.map(s => `
           <div class="card">
             <div class="card-title">${escapeHtml(s['Seva Name'])}</div>
             ${sevaCardBody(s)}
@@ -2151,9 +2541,10 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
               <button class="btn btn-danger small" data-cancel-seva="${escapeHtml(s['Seva ID'])}">Cancel</button>
             </div>
           </div>
-        `).join('') : '<div class="empty">No seva opportunities yet — create one above.</div>'}
+        `).join('')}</div>` : `<div class="empty">${showHistory ? 'No seva opportunities on record.' : 'No upcoming seva opportunities — create one above, or turn on Show History to see past ones.'}</div>`}
       `;
       document.getElementById('new-seva-btn').addEventListener('click', () => openSevaModal({}, showSeva));
+      bindHistoryToggle(showSeva);
       wireSevaCardActions(body, seva, showSeva);
       return;
     }
@@ -2161,8 +2552,8 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
     // Scoped admin: card view with registrations + attendance, same as before,
     // plus the ability to create/edit/cancel seva of their own assigned type.
     body.innerHTML = `
-      <button class="btn btn-primary" id="new-seva-btn" style="margin-bottom:14px;">+ New Seva Opportunity</button>
-      ${seva.length ? seva.map(s => `
+      ${headerBar}
+      ${seva.length ? `<div class="card-grid">${seva.map(s => `
         <div class="card">
           <div class="card-title">${escapeHtml(s['Seva Name'])}</div>
           ${sevaCardBody(s)}
@@ -2175,9 +2566,10 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
             <button class="btn btn-danger small" data-cancel-seva="${escapeHtml(s['Seva ID'])}">Cancel</button>
           </div>
         </div>
-      `).join('') : '<div class="empty">No seva opportunities of your type yet — create one above.</div>'}
+      `).join('')}</div>` : `<div class="empty">${showHistory ? 'No seva opportunities of your type on record.' : 'No upcoming seva opportunities of your type — create one above, or turn on Show History to see past ones.'}</div>`}
     `;
     document.getElementById('new-seva-btn').addEventListener('click', () => openSevaModal({}, showSeva));
+    bindHistoryToggle(showSeva);
     wireSevaCardActions(body, seva, showSeva);
   }
 
@@ -2299,10 +2691,22 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
   async function showEvents() {
     paintTabs('events');
     body.innerHTML = skeletons(2);
-    const [events, seva] = await Promise.all([
+    const [allEvents, allSeva] = await Promise.all([
       cachedGet('allEvents:' + pin, () => api.get('allEvents', { pin }), 8000),
       fetchSevaList()
     ]);
+    // Today-and-upcoming by default, ascending; "Show History" reveals past
+    // events too. An event counts as "upcoming" through its last day --
+    // multi-day events use End Date, single-day events (no End Date) fall
+    // back to Start Date, same rule the public Events tab uses.
+    const today = todayLocalStr();
+    const events = allEvents
+      .filter(ev => showHistory || String(ev['End Date'] || ev['Start Date'] || '') >= today)
+      .sort((a, b) => String(a['Start Date'] || '').localeCompare(String(b['Start Date'] || '')));
+    // Seva under each event is filtered the same way, so "Edit" lists (and
+    // the reschedule-candidate list elsewhere) don't surface past dates
+    // unless history is on.
+    const seva = filterAndSortByDate(allSeva, 'Date');
     const sevaByEvent = {};
     seva.forEach(s => {
       const key = s['Event ID'];
@@ -2311,8 +2715,11 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
     });
 
     body.innerHTML = `
-      <button class="btn btn-primary" id="new-event-btn" style="margin-bottom:14px;">+ New Event</button>
-      ${events.length ? events.map(ev => {
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+        <button class="btn btn-primary" id="new-event-btn">+ New Event</button>
+        ${historyToggleHtml()}
+      </div>
+      ${events.length ? `<div class="card-grid">${events.map(ev => {
         const evSeva = sevaByEvent[ev['Event ID']] || [];
         return `
         <div class="card">
@@ -2340,10 +2747,11 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
             <button class="btn btn-outline small" data-edit-event="${escapeHtml(ev['Event ID'])}">Edit Event</button>
           </div>
         </div>
-      `; }).join('') : '<div class="empty">No events yet.</div>'}
+      `; }).join('')}</div>` : `<div class="empty">${showHistory ? 'No events on record.' : 'No upcoming events — create one above, or turn on Show History to see past ones.'}</div>`}
     `;
 
     document.getElementById('new-event-btn').addEventListener('click', () => openEventModal(null, showEvents));
+    bindHistoryToggle(showEvents);
     body.querySelectorAll('[data-edit-event]').forEach(btn => {
       btn.addEventListener('click', () => {
         const ev = events.find(e => String(e['Event ID']) === btn.dataset.editEvent);
@@ -2438,7 +2846,7 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
     body.innerHTML = `
       <button class="btn btn-primary" id="new-recur-btn" style="margin-bottom:10px;">+ New Recurring Seva</button>
       <button class="btn btn-ghost" id="generate-recur-btn" style="margin-bottom:14px;">Generate Occurrences Now</button>
-      ${patterns.length ? patterns.map(p => `
+      ${patterns.length ? `<div class="card-grid">${patterns.map(p => `
         <div class="card">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
             <div class="card-title">${escapeHtml(p['Seva Name'])}</div>
@@ -2454,7 +2862,7 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
             ${String(p['Active']).toUpperCase() === 'TRUE' ? 'Pause' : 'Resume'}
           </button>
         </div>
-      `).join('') : '<div class="empty">No recurring seva set up yet.</div>'}
+      `).join('')}</div>` : '<div class="empty">No recurring seva set up yet.</div>'}
     `;
     document.getElementById('new-recur-btn').addEventListener('click', () => openRecurringModal(events));
     document.getElementById('generate-recur-btn').addEventListener('click', async () => {
