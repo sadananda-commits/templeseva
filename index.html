@@ -459,10 +459,14 @@ const CONFIG = {
   //   krishna    -> shown on Upcoming Seva & My Seva (e.g. a Radha Krishna photo)
   //   jagannath  -> shown on Events & Event Detail (e.g. Jagannath, Balabhadra & Subhadra)
   //   neutral    -> shown on Admin
-  // All three currently point at the same two seva/kitchen team photos, so
-  // every tab (not just Admin) shows them to every visitor. Once you have
-  // real Krishna-Radharani and Jagannath-trio photos, just point krishna/
-  // jagannath at those instead and leave neutral (Admin) on the team photos.
+  // All three are set to 'auto' below, which means "use whatever
+  // volunteers-N.jpg / volunteers-N.png files exist in this folder" (see
+  // discoverVolunteerPhotos() further down) -- so every tab shows your
+  // volunteer photos, and adding volunteers-3.jpg, volunteers-4.jpg, etc.
+  // later needs no code change at all, just upload the file. Once you have
+  // real Krishna-Radharani and Jagannath-trio photos, replace 'auto' with
+  // a URL (or an array of URLs) on krishna/jagannath and leave neutral on
+  // 'auto' for the volunteer photos.
   // IMPORTANT: only use an image you actually have the right to use --
   // e.g. a public-domain/Creative-Commons photo from Wikimedia Commons
   // (commons.wikimedia.org) or Openverse (openverse.org), your own
@@ -471,9 +475,9 @@ const CONFIG = {
   // your web host -- linking directly to someone else's website instead
   // can break if that site blocks hotlinking or moves/removes the file.
   DEITY_IMAGES: {
-    krishna: ['volunteers-1.jpg', 'volunteers-2.jpg'],
-    jagannath: ['volunteers-1.jpg', 'volunteers-2.jpg'],
-    neutral: ['volunteers-1.jpg', 'volunteers-2.jpg']
+    krishna: 'auto',
+    jagannath: 'auto',
+    neutral: 'auto'
   }
 };
 document.getElementById('hdr-eyebrow').textContent = CONFIG.TEMPLE_NAME;
@@ -795,23 +799,58 @@ const HDR_ART_NEUTRAL = `
 
 const HEADER_THEMES = { home: 'krishna', myseva: 'krishna', events: 'jagannath', event: 'jagannath', admin: 'neutral' };
 const HEADER_ART = { krishna: HDR_ART_KRISHNA, jagannath: HDR_ART_JAGANNATH, neutral: HDR_ART_NEUTRAL };
+
+/* ---------------- Volunteer photo auto-discovery ----------------
+   Rather than hard-coding a filename list that needs a code edit every
+   time a photo is added, this just tries to load volunteers-1.*,
+   volunteers-2.*, ... up to VOLUNTEER_PHOTO_MAX and keeps whichever ones
+   actually exist. Drop a new volunteers-N.jpg (any N, gaps are fine --
+   volunteers-1/volunteers-3 with no volunteers-2 works) into the same
+   folder as this file and it shows up automatically on the next page
+   load. Raise VOLUNTEER_PHOTO_MAX or add extensions to
+   VOLUNTEER_PHOTO_EXTS below if you ever need more than that. */
+const VOLUNTEER_PHOTO_PREFIX = 'volunteers-';
+const VOLUNTEER_PHOTO_MAX = 15;
+const VOLUNTEER_PHOTO_EXTS = ['jpg', 'png'];
+
+function probeImage(url) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
+}
+
+let volunteerPhotosPromise = null;
+function discoverVolunteerPhotos() {
+  if (volunteerPhotosPromise) return volunteerPhotosPromise; // only ever probes once per page load
+  const perIndex = [];
+  for (let n = 1; n <= VOLUNTEER_PHOTO_MAX; n++) {
+    const candidates = VOLUNTEER_PHOTO_EXTS.map(ext => `${VOLUNTEER_PHOTO_PREFIX}${n}.${ext}`);
+    perIndex.push(
+      Promise.all(candidates.map(probeImage)).then(results => {
+        const hit = results.findIndex(Boolean);
+        return hit === -1 ? null : candidates[hit];
+      })
+    );
+  }
+  volunteerPhotosPromise = Promise.all(perIndex).then(urls => urls.filter(Boolean));
+  return volunteerPhotosPromise;
+}
+let cachedAutoPhotos = null; // filled in once discovery resolves; null means "still looking"
+
 let currentHeaderTheme = null;
 let headerPhotoTimer = null;
-function applyHeaderTheme(tab) {
-  const theme = HEADER_THEMES[tab] || 'neutral';
-  if (theme === currentHeaderTheme) return;
-  currentHeaderTheme = theme;
+// Puts either a rotating photo set or the theme's illustration into the
+// header art layer. Split out from applyHeaderTheme so the async photo
+//-discovery callback can re-render the currently-visible header in place
+// once it knows what's actually out there, without re-running the tab
+// dedupe logic in applyHeaderTheme.
+function renderHeaderArt(theme, photos) {
   if (headerPhotoTimer) { clearInterval(headerPhotoTimer); headerPhotoTimer = null; }
-  const header = document.getElementById('app-header');
-  header.classList.remove('theme-krishna', 'theme-jagannath', 'theme-neutral');
-  header.classList.add('theme-' + theme);
   const art = document.getElementById('hdr-art');
   art.style.opacity = ''; // clear any mid-fade leftover from a previous rotation
-  // A real photo (or a rotating set of them, from CONFIG.DEITY_IMAGES) takes
-  // priority over the built-in illustration -- see the comment on
-  // DEITY_IMAGES above for where to legally source one.
-  let photos = CONFIG.DEITY_IMAGES && CONFIG.DEITY_IMAGES[theme];
-  if (photos && !Array.isArray(photos)) photos = [photos];
   photos = (photos || []).filter(Boolean);
   if (photos.length) {
     art.innerHTML = '';
@@ -835,6 +874,39 @@ function applyHeaderTheme(tab) {
     art.classList.remove('hdr-art-photo');
     art.style.backgroundImage = '';
     art.innerHTML = HEADER_ART[theme] || '';
+  }
+}
+function applyHeaderTheme(tab) {
+  const theme = HEADER_THEMES[tab] || 'neutral';
+  if (theme === currentHeaderTheme) return;
+  currentHeaderTheme = theme;
+  const header = document.getElementById('app-header');
+  header.classList.remove('theme-krishna', 'theme-jagannath', 'theme-neutral');
+  header.classList.add('theme-' + theme);
+  // A real photo (or a rotating set of them, from CONFIG.DEITY_IMAGES) takes
+  // priority over the built-in illustration -- see the comment on
+  // DEITY_IMAGES above for where to legally source one. 'auto' means "use
+  // whatever volunteers-N.* files actually exist" (see discovery above).
+  let photos = CONFIG.DEITY_IMAGES && CONFIG.DEITY_IMAGES[theme];
+  if (photos === 'auto') {
+    photos = cachedAutoPhotos; // null the very first time -- shows the illustration until discovery below resolves
+  } else if (photos && !Array.isArray(photos)) {
+    photos = [photos];
+  }
+  renderHeaderArt(theme, photos);
+
+  // If this theme wants auto-discovered photos and we haven't looked yet,
+  // kick off discovery (idempotent -- only ever probes once per page load)
+  // and swap the header in place once it resolves, but only if the user is
+  // still on a tab using 'auto' photos by then (a few hundred ms at most).
+  if (CONFIG.DEITY_IMAGES && CONFIG.DEITY_IMAGES[theme] === 'auto' && cachedAutoPhotos === null) {
+    discoverVolunteerPhotos().then(found => {
+      cachedAutoPhotos = found;
+      const nowTheme = HEADER_THEMES[state.tab] || 'neutral';
+      if (found.length && CONFIG.DEITY_IMAGES[nowTheme] === 'auto') {
+        renderHeaderArt(nowTheme, found);
+      }
+    });
   }
 }
 
