@@ -455,10 +455,14 @@ const CONFIG = {
   // an actual photo behind each theme's header instead of the built-in
   // illustration. Leave blank ('') to keep the illustration. Give an array
   // instead of a single string to have the header slowly rotate between
-  // several photos (used below for the Admin/seva-team photos).
+  // several photos.
   //   krishna    -> shown on Upcoming Seva & My Seva (e.g. a Radha Krishna photo)
   //   jagannath  -> shown on Events & Event Detail (e.g. Jagannath, Balabhadra & Subhadra)
-  //   neutral    -> shown on Admin (defaults to your own seva/kitchen team photos)
+  //   neutral    -> shown on Admin
+  // All three currently point at the same two seva/kitchen team photos, so
+  // every tab (not just Admin) shows them to every visitor. Once you have
+  // real Krishna-Radharani and Jagannath-trio photos, just point krishna/
+  // jagannath at those instead and leave neutral (Admin) on the team photos.
   // IMPORTANT: only use an image you actually have the right to use --
   // e.g. a public-domain/Creative-Commons photo from Wikimedia Commons
   // (commons.wikimedia.org) or Openverse (openverse.org), your own
@@ -467,8 +471,8 @@ const CONFIG = {
   // your web host -- linking directly to someone else's website instead
   // can break if that site blocks hotlinking or moves/removes the file.
   DEITY_IMAGES: {
-    krishna: '',
-    jagannath: '',
+    krishna: ['volunteers-1.jpg', 'volunteers-2.jpg'],
+    jagannath: ['volunteers-1.jpg', 'volunteers-2.jpg'],
     neutral: ['volunteers-1.jpg', 'volunteers-2.jpg']
   }
 };
