@@ -138,7 +138,7 @@ section.block h2{font-size:19px; margin-bottom:10px;}
    color-matched gradient scrim so header text stays fully legible on top.
    ============================================================ */
 header.top{overflow:hidden; transition:background 1.2s ease;}
-.hdr-art{position:absolute; inset:0; z-index:0; opacity:.55;}
+.hdr-art{position:absolute; inset:0; z-index:0; opacity:.55; transition:opacity .38s ease;}
 .hdr-art svg{width:100%; height:100%; display:block;}
 /* Used instead of the inline SVG when CONFIG.DEITY_IMAGES has a real photo
    URL for this theme -- see applyHeaderTheme(). */
@@ -453,19 +453,23 @@ const CONFIG = {
   // ---- Optional: real header photos ----
   // Paste a direct image URL (ending in .jpg/.png/.webp etc.) here to use
   // an actual photo behind each theme's header instead of the built-in
-  // illustration. Leave blank ('') to keep the illustration.
+  // illustration. Leave blank ('') to keep the illustration. Give an array
+  // instead of a single string to have the header slowly rotate between
+  // several photos (used below for the Admin/seva-team photos).
   //   krishna    -> shown on Upcoming Seva & My Seva (e.g. a Radha Krishna photo)
   //   jagannath  -> shown on Events & Event Detail (e.g. Jagannath, Balabhadra & Subhadra)
+  //   neutral    -> shown on Admin (defaults to your own seva/kitchen team photos)
   // IMPORTANT: only use an image you actually have the right to use --
   // e.g. a public-domain/Creative-Commons photo from Wikimedia Commons
-  // (commons.wikimedia.org) or Openverse (openverse.org), or your own
-  // temple's own photo. For reliability, upload it to your own hosting
-  // (or Google Drive/GitHub) rather than linking directly to someone
-  // else's website, which can block hotlinking or move/remove the file
-  // without notice.
+  // (commons.wikimedia.org) or Openverse (openverse.org), your own
+  // temple's own photo, or (as set up below) your own volunteers' photos.
+  // Upload the image file(s) to the same folder as this index.html on
+  // your web host -- linking directly to someone else's website instead
+  // can break if that site blocks hotlinking or moves/removes the file.
   DEITY_IMAGES: {
     krishna: '',
-    jagannath: ''
+    jagannath: '',
+    neutral: ['volunteers-1.jpg', 'volunteers-2.jpg']
   }
 };
 document.getElementById('hdr-eyebrow').textContent = CONFIG.TEMPLE_NAME;
@@ -788,22 +792,41 @@ const HDR_ART_NEUTRAL = `
 const HEADER_THEMES = { home: 'krishna', myseva: 'krishna', events: 'jagannath', event: 'jagannath', admin: 'neutral' };
 const HEADER_ART = { krishna: HDR_ART_KRISHNA, jagannath: HDR_ART_JAGANNATH, neutral: HDR_ART_NEUTRAL };
 let currentHeaderTheme = null;
+let headerPhotoTimer = null;
 function applyHeaderTheme(tab) {
   const theme = HEADER_THEMES[tab] || 'neutral';
   if (theme === currentHeaderTheme) return;
   currentHeaderTheme = theme;
+  if (headerPhotoTimer) { clearInterval(headerPhotoTimer); headerPhotoTimer = null; }
   const header = document.getElementById('app-header');
   header.classList.remove('theme-krishna', 'theme-jagannath', 'theme-neutral');
   header.classList.add('theme-' + theme);
   const art = document.getElementById('hdr-art');
-  // A real photo (pasted into CONFIG.DEITY_IMAGES) takes priority over the
-  // built-in illustration -- see the comment on DEITY_IMAGES above for
-  // where to legally source one. Falls back to the illustration if blank.
-  const photoUrl = CONFIG.DEITY_IMAGES && CONFIG.DEITY_IMAGES[theme];
-  if (photoUrl) {
+  art.style.opacity = ''; // clear any mid-fade leftover from a previous rotation
+  // A real photo (or a rotating set of them, from CONFIG.DEITY_IMAGES) takes
+  // priority over the built-in illustration -- see the comment on
+  // DEITY_IMAGES above for where to legally source one.
+  let photos = CONFIG.DEITY_IMAGES && CONFIG.DEITY_IMAGES[theme];
+  if (photos && !Array.isArray(photos)) photos = [photos];
+  photos = (photos || []).filter(Boolean);
+  if (photos.length) {
     art.innerHTML = '';
     art.classList.add('hdr-art-photo');
-    art.style.backgroundImage = `url("${photoUrl}")`;
+    art.style.backgroundImage = `url("${photos[0]}")`;
+    if (photos.length > 1) {
+      // Slow crossfade between photos: fade the layer out, swap the image
+      // underneath while it's invisible, then fade back in -- background-image
+      // itself can't be transitioned, so this fakes the crossfade with opacity.
+      let idx = 0;
+      headerPhotoTimer = setInterval(() => {
+        idx = (idx + 1) % photos.length;
+        art.style.opacity = '0';
+        setTimeout(() => {
+          art.style.backgroundImage = `url("${photos[idx]}")`;
+          art.style.opacity = '';
+        }, 380);
+      }, 6000);
+    }
   } else {
     art.classList.remove('hdr-art-photo');
     art.style.backgroundImage = '';
