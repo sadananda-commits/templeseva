@@ -406,18 +406,27 @@ table.data-table .sub{display:block; font-size:11.5px; color:var(--ink-soft); fo
   content:''; position:absolute; top:0; left:0; right:0; height:4px;
   background:linear-gradient(90deg, var(--primary), #F4C869, var(--accent));
 }
-.hero-badge{
-  position:absolute; top:14px; right:14px; width:38px; height:38px; border-radius:50%;
-  background:radial-gradient(circle at 34% 30%, #FFF6E2, #F4C869 62%, #C6591A 100%);
-  display:flex; align-items:center; justify-content:center;
-  box-shadow:0 3px 10px rgba(198,89,26,0.4);
-  animation:heroBadgeBreathe 3.4s ease-in-out infinite;
+/* Small rounded rectangle that genuinely drifts around the top-right
+   corner (real position movement via translate/rotate, not just a colour
+   cycle) -- kept small and boxed into that corner so it never wanders over
+   the title text below. */
+.hero-float{
+  position:absolute; top:16px; right:18px; width:26px; height:18px; border-radius:6px;
+  background:linear-gradient(135deg, #F4C869, var(--primary));
+  box-shadow:0 3px 8px rgba(198,89,26,0.4);
+  animation:heroFloat 8s ease-in-out infinite;
+  pointer-events:none;
 }
-.hero-badge svg{width:19px; height:19px; display:block;}
-@keyframes heroBadgeBreathe{0%,100%{transform:scale(1);} 50%{transform:scale(1.1);}}
-.hero-eyebrow{font-size:11.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--primary-dark); padding-right:46px;}
-.hero-title{font-family:var(--font-display); font-size:22px; font-weight:700; color:var(--ink); margin:2px 0 4px; padding-right:46px;}
+@keyframes heroFloat{
+  0%,100%{transform:translate(0,0) rotate(0deg);}
+  25%{transform:translate(-16px,10px) rotate(-10deg);}
+  50%{transform:translate(-6px,20px) rotate(6deg);}
+  75%{transform:translate(8px,8px) rotate(10deg);}
+}
+.hero-eyebrow{font-size:11.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--primary-dark); padding-right:50px;}
+.hero-title{font-family:var(--font-display); font-size:22px; font-weight:700; color:var(--ink); margin:2px 0 4px; padding-right:50px;}
 .hero-meta{font-size:13.5px; color:var(--ink-soft); margin-bottom:12px;}
+.hero-date{font-weight:800; color:var(--ink);}
 .hero-bottom{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
 .hero-slots{font-size:13px; font-weight:700; color:var(--success);}
 .hero-slots.full{color:var(--danger);}
@@ -508,8 +517,7 @@ table.data-table .sub{display:block; font-size:11.5px; color:var(--ink-soft); fo
    CONFIG -- paste your Apps Script Web App URL here after deploying
    ============================================================ */
 const CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbx5Y5s07yA1ZLuxm8b2NsQtpKsAYOT8HuRNBVPBV0FzELdVzTYNKgXErb71aNBCpBb8/exec',
-
+  API_URL: 'https://script.google.com/macros/s/AKfycbxONGMsHwUypS-ucqRD_6i2FgyueKlvvuyYVW2fk70fkfgRRW4BQ-iS8KbE11yH1aU_/exec',
   TEMPLE_NAME: 'Hare Krishna Temple',
   TAGLINE: 'Serve with devotion. Participate in seva.',
   // ---- Optional: real header photos ----
@@ -1223,17 +1231,10 @@ function renderNextSevaHero(g) {
 
   return `
     <div class="hero-card">
-      <div class="hero-badge" aria-hidden="true">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 20c-2.4-1.8-4-4.4-4-7.2a4 4 0 018 0c0 2.8-1.6 5.4-4 7.2z" fill="#7A1F3D"/>
-          <path d="M12 20c-1.6-2.6-2.4-5.2-.8-8.4 1.6 3.2.8 5.8.8 8.4z" fill="#4B2E0A" opacity=".55"/>
-          <path d="M7.4 12.6c-1.8-.8-2.8-2.6-2.2-5 1.8 1.6 2.6 3.2 2.2 5z" fill="#7A1F3D" opacity=".85"/>
-          <path d="M16.6 12.6c1.8-.8 2.8-2.6 2.2-5-1.8 1.6-2.6 3.2-2.2 5z" fill="#7A1F3D" opacity=".85"/>
-        </svg>
-      </div>
+      <div class="hero-float" aria-hidden="true"></div>
       <div class="hero-eyebrow">Next Seva</div>
       <div class="hero-title">${escapeHtml(g.sevaName)}</div>
-      <div class="hero-meta">${escapeHtml(fmtDate(g.nextDate))}${timeText ? ' · ' + escapeHtml(timeText) : ''}</div>
+      <div class="hero-meta"><span class="hero-date">${escapeHtml(fmtDate(g.nextDate))}</span>${timeText ? ' · ' + escapeHtml(timeText) : ''}</div>
       <div class="hero-bottom">
         <span class="hero-slots ${full ? 'full' : ''}">${escapeHtml(slotsText)}</span>
         ${actionHtml}
