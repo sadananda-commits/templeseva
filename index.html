@@ -51,6 +51,31 @@ body{
      so it adds texture without ever affecting load time or readability. */
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23C6591A' stroke-opacity='0.05' stroke-width='1.5'%3E%3Ccircle cx='60' cy='60' r='38'/%3E%3Ccircle cx='60' cy='60' r='4'/%3E%3Cpath d='M60 22 L64 40 L60 60 L56 40 Z'/%3E%3Cpath d='M98 60 L80 64 L60 60 L80 56 Z'/%3E%3Cpath d='M60 98 L56 80 L60 60 L64 80 Z'/%3E%3Cpath d='M22 60 L40 56 L60 60 L40 64 Z'/%3E%3C/g%3E%3C/svg%3E");
   background-attachment:fixed;
+  position:relative;
+}
+/* ============================================================
+   AMBIENT BACKGROUND -- a handful of large, soft, blurred colour blobs in
+   the temple palette (peacock blue, marigold gold, maroon) that slowly
+   drift and breathe behind the app. Pure CSS (transform + opacity only,
+   both GPU-accelerated, no layout thrash), fixed behind everything at
+   z-index:0 with .app raised to z-index:1 above it. This is what actually
+   shows in the empty margins around cards and outside the app column on
+   wide screens -- the flat single colour before this felt static; this
+   gives the whole page a living, contemporary "aurora" backdrop instead.
+   ============================================================ */
+.bg-aurora{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none;}
+.bg-aurora span{position:absolute; border-radius:50%; filter:blur(70px); will-change:transform;}
+.bg-aurora span:nth-child(1){width:420px; height:420px; top:-12%; left:-10%; background:#2D5F8A; opacity:.28; animation:auroraDrift1 26s ease-in-out infinite;}
+.bg-aurora span:nth-child(2){width:380px; height:380px; top:38%; right:-14%; background:#F4C869; opacity:.30; animation:auroraDrift2 32s ease-in-out infinite;}
+.bg-aurora span:nth-child(3){width:340px; height:340px; bottom:-14%; left:22%; background:#7A1F3D; opacity:.22; animation:auroraDrift3 22s ease-in-out infinite;}
+@keyframes auroraDrift1{0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(60px,50px) scale(1.15);}}
+@keyframes auroraDrift2{0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(-55px,35px) scale(0.9);}}
+@keyframes auroraDrift3{0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(45px,-55px) scale(1.1);}}
+/* Lighter on phones -- fewer, smaller, less blur, since the blur filter is
+   the one part of this that costs real GPU time on low-power devices. */
+@media (max-width:600px){
+  .bg-aurora span{filter:blur(46px);}
+  .bg-aurora span:nth-child(3){display:none;}
 }
 h1,h2,h3,.display{font-family:var(--font-display); font-weight:700; color:var(--ink); margin:0;}
 button{font-family:inherit;}
@@ -74,7 +99,7 @@ img{max-width:100%;}
    of the screen as bare background -- the media queries below let it use
    the extra room instead, capping out at 1400px so lines of text don't
    stretch edge-to-edge on very wide monitors. */
-.app{max-width:640px; width:100%; margin:0 auto; min-height:100vh; position:relative;}
+.app{max-width:640px; width:100%; margin:0 auto; min-height:100vh; position:relative; z-index:1;}
 @media (min-width:640px){ .app{max-width:1400px;} }
 @media (min-width:1440px){ .app{box-shadow:0 0 70px rgba(43,33,24,0.10);} }
 header.top{
@@ -341,22 +366,57 @@ table.data-table .sub{display:block; font-size:11.5px; color:var(--ink-soft); fo
 .identity-bar.hidden{display:none;}
 .identity-bar.force-hidden{display:none;}
 .signin-bar{display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:14px; font-size:13.5px;}
-/* ---- Next Seva hero card (Upcoming Seva, above the view toggle) ---- */
-.hero-card{background:linear-gradient(135deg, var(--primary-soft), var(--surface-warm)); border-radius:var(--radius); padding:16px 18px; margin-bottom:16px; box-shadow:var(--shadow); position:relative; overflow:hidden;}
-/* Slow-rotating gradient "divine glow" ring around the Next Seva card --
-   a thin animated border rather than a flat one-tone rule. Built with a
-   masked pseudo-element (no extra markup) so it works as a drop-in on top
-   of the existing card. */
-.hero-card::after{
-  content:''; position:absolute; inset:0; border-radius:inherit; padding:2px; pointer-events:none;
-  background:conic-gradient(from 0deg, var(--primary), #F4C869, var(--accent), var(--primary));
-  -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite:xor; mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask-composite:exclude;
-  opacity:.45; animation:heroRing 8s linear infinite;
+/* ---- Next Seva hero card (Upcoming Seva, above the view toggle) ----
+   Previously had a spinning conic-gradient "ring" built with CSS masking
+   to fake an animated border -- that trick renders inconsistently across
+   browsers, and where the mask failed, the *entire* gradient rectangle
+   showed through unclipped, spinning in place ("a rectangle floating in
+   the air"). The spin is back below, but rebuilt with the background-clip
+   double-layer technique instead of masking: a transparent border plus a
+   conic-gradient clipped to the border-box, animated via a registered
+   @property angle. A browser without @property support just shows the
+   ring as a static (non-spinning) gradient border -- never as a floating
+   unclipped rectangle, which is what made the old version look broken. */
+@property --hero-border-angle{
+  syntax:'<angle>'; inherits:false; initial-value:0deg;
 }
-@keyframes heroRing{to{transform:rotate(360deg);}}
-.hero-eyebrow{font-size:11.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--primary-dark);}
-.hero-title{font-family:var(--font-display); font-size:22px; font-weight:700; color:var(--ink); margin:2px 0 4px;}
+.hero-card{
+  position:relative; overflow:hidden; border-radius:var(--radius);
+  padding:18px 20px 18px 18px; margin-bottom:16px;
+  border:3px solid transparent;
+  /* Four layered backgrounds, topmost first: a tiled "Hare Krishna"
+     watermark (low opacity baked into the SVG itself, like text printed on
+     temple stationery or a prasadam wrapper), a warm corner glow, the base
+     gradient, and -- clipped to the border itself rather than the padding
+     box -- the spinning conic-gradient ring. */
+  background-image:
+    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='200'%20height='90'%20viewBox='0%200%20200%2090'%3E%3Ctext%20x='6'%20y='28'%20font-family='Georgia,serif'%20font-size='17'%20font-weight='700'%20font-style='italic'%20fill='%237A1F3D'%20fill-opacity='0.11'%20transform='rotate(-14%20100%2045)'%3EHare%20Krishna%3C/text%3E%3Ctext%20x='-64'%20y='73'%20font-family='Georgia,serif'%20font-size='17'%20font-weight='700'%20font-style='italic'%20fill='%237A1F3D'%20fill-opacity='0.11'%20transform='rotate(-14%20100%2045)'%3EHare%20Krishna%3C/text%3E%3C/svg%3E"),
+    radial-gradient(140% 100% at 100% 0%, rgba(244,200,105,0.45) 0%, transparent 55%),
+    linear-gradient(135deg, var(--primary-soft) 0%, var(--surface-warm) 100%),
+    conic-gradient(from var(--hero-border-angle), var(--primary), #F4C869, var(--accent), var(--primary));
+  background-repeat:repeat, no-repeat, no-repeat, no-repeat;
+  background-size:170px auto, auto, auto, auto;
+  background-origin:padding-box, padding-box, padding-box, border-box;
+  background-clip:padding-box, padding-box, padding-box, border-box;
+  box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,0.5);
+  animation:heroBorderSpin 6s linear infinite;
+}
+@keyframes heroBorderSpin{ to{ --hero-border-angle:360deg; } }
+.hero-card::before{
+  content:''; position:absolute; top:0; left:0; right:0; height:4px;
+  background:linear-gradient(90deg, var(--primary), #F4C869, var(--accent));
+}
+.hero-badge{
+  position:absolute; top:14px; right:14px; width:38px; height:38px; border-radius:50%;
+  background:radial-gradient(circle at 34% 30%, #FFF6E2, #F4C869 62%, #C6591A 100%);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 3px 10px rgba(198,89,26,0.4);
+  animation:heroBadgeBreathe 3.4s ease-in-out infinite;
+}
+.hero-badge svg{width:19px; height:19px; display:block;}
+@keyframes heroBadgeBreathe{0%,100%{transform:scale(1);} 50%{transform:scale(1.1);}}
+.hero-eyebrow{font-size:11.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--primary-dark); padding-right:46px;}
+.hero-title{font-family:var(--font-display); font-size:22px; font-weight:700; color:var(--ink); margin:2px 0 4px; padding-right:46px;}
 .hero-meta{font-size:13.5px; color:var(--ink-soft); margin-bottom:12px;}
 .hero-bottom{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
 .hero-slots{font-size:13px; font-weight:700; color:var(--success);}
@@ -419,6 +479,7 @@ table.data-table .sub{display:block; font-size:11.5px; color:var(--ink-soft); fo
 </style>
 </head>
 <body>
+<div class="bg-aurora" aria-hidden="true"><span></span><span></span><span></span></div>
 <div class="app" id="app">
   <header class="top" id="app-header">
     <div class="hdr-art" id="hdr-art" aria-hidden="true"></div>
@@ -1161,6 +1222,14 @@ function renderNextSevaHero(g) {
 
   return `
     <div class="hero-card">
+      <div class="hero-badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 20c-2.4-1.8-4-4.4-4-7.2a4 4 0 018 0c0 2.8-1.6 5.4-4 7.2z" fill="#7A1F3D"/>
+          <path d="M12 20c-1.6-2.6-2.4-5.2-.8-8.4 1.6 3.2.8 5.8.8 8.4z" fill="#4B2E0A" opacity=".55"/>
+          <path d="M7.4 12.6c-1.8-.8-2.8-2.6-2.2-5 1.8 1.6 2.6 3.2 2.2 5z" fill="#7A1F3D" opacity=".85"/>
+          <path d="M16.6 12.6c1.8-.8 2.8-2.6 2.2-5-1.8 1.6-2.6 3.2-2.2 5z" fill="#7A1F3D" opacity=".85"/>
+        </svg>
+      </div>
       <div class="hero-eyebrow">Next Seva</div>
       <div class="hero-title">${escapeHtml(g.sevaName)}</div>
       <div class="hero-meta">${escapeHtml(fmtDate(g.nextDate))}${timeText ? ' · ' + escapeHtml(timeText) : ''}</div>
