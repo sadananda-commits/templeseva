@@ -3048,9 +3048,12 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
             ${p['Location'] ? `<span>📍 ${escapeHtml(p['Location'])}</span>` : ''}
             ${p['Event ID'] && eventName(p['Event ID']) ? `<span class="badge event">${escapeHtml(eventName(p['Event ID']))}</span>` : ''}
           </div>
-          <button class="btn btn-outline small" data-toggle-pattern="${escapeHtml(p['Pattern ID'])}" data-active="${String(p['Active']).toUpperCase()}">
-            ${String(p['Active']).toUpperCase() === 'TRUE' ? 'Pause' : 'Resume'}
-          </button>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-outline small" data-edit-pattern="${escapeHtml(p['Pattern ID'])}">Edit</button>
+            <button class="btn btn-outline small" data-toggle-pattern="${escapeHtml(p['Pattern ID'])}" data-active="${String(p['Active']).toUpperCase()}">
+              ${String(p['Active']).toUpperCase() === 'TRUE' ? 'Pause' : 'Resume'}
+            </button>
+          </div>
         </div>
       `).join('')}</div>` : '<div class="empty">No recurring seva set up yet.</div>'}
     `;
@@ -3071,6 +3074,12 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
         const review = (result.needsReview || []).length;
         toast(`${result.removed} wrong date(s) removed.` + (review ? ` ${review} with registrations need a manual look.` : ''));
       } catch (e) { toast(e.message); }
+    });
+    body.querySelectorAll('[data-edit-pattern]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p = patterns.find(x => String(x['Pattern ID']) === btn.dataset.editPattern);
+        if (p) openRecurringModal(events, p);
+      });
     });
     body.querySelectorAll('[data-toggle-pattern]').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -3097,26 +3106,30 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
 
   // events: the already-fetched event list, so this can offer an optional
   // "attach to an event" dropdown without a separate round trip.
-  function openRecurringModal(events) {
+  // existing: a RecurringPatterns row to edit, or undefined to create a new one.
+  function openRecurringModal(events, existing) {
+    const isEdit = !!existing;
+    const ex = existing || {};
+    const v = (k) => isEdit ? escapeHtml(ex[k] === undefined || ex[k] === null ? '' : ex[k]) : '';
     const overlay = openModal(`
-      <div class="sheet-head"><h3>New Recurring Seva</h3><button class="close-x" id="modal-close">✕</button></div>
-      ${isSuperAdmin ? `<div class="field"><label>Seva Type ID</label><input id="rp-type" placeholder="e.g. ST_ABC123"></div>` : ''}
+      <div class="sheet-head"><h3>${isEdit ? 'Edit Recurring Seva' : 'New Recurring Seva'}</h3><button class="close-x" id="modal-close">✕</button></div>
+      ${isSuperAdmin && !isEdit ? `<div class="field"><label>Seva Type ID</label><input id="rp-type" placeholder="e.g. ST_ABC123"></div>` : ''}
       <div class="field"><label>Event (optional)</label>
         <select id="rp-event">
           <option value="">Standalone — not tied to an event</option>
-          ${(events || []).map(ev => `<option value="${escapeHtml(ev['Event ID'])}">${escapeHtml(ev['Event Name'])}</option>`).join('')}
+          ${(events || []).map(ev => `<option value="${escapeHtml(ev['Event ID'])}" ${isEdit && String(ex['Event ID']) === String(ev['Event ID']) ? 'selected' : ''}>${escapeHtml(ev['Event Name'])}</option>`).join('')}
         </select>
       </div>
-      <div class="field"><label>Seva Name</label><input id="rp-name"></div>
+      <div class="field"><label>Seva Name</label><input id="rp-name" value="${v('Seva Name')}"></div>
       <div class="field"><label>Repeats</label>
         <select id="rp-recurtype">
-          <option value="WEEKLY">Every week</option>
-          <option value="MONTHLY_NTH" selected>One specific week each month</option>
+          <option value="WEEKLY" ${isEdit && String(ex['Recurrence Type']).toUpperCase() !== 'MONTHLY_NTH' ? 'selected' : ''}>Every week</option>
+          <option value="MONTHLY_NTH" ${!isEdit || String(ex['Recurrence Type']).toUpperCase() === 'MONTHLY_NTH' ? 'selected' : ''}>One specific week each month</option>
         </select>
       </div>
       <div class="row-2">
         <div class="field"><label>Day of Week</label>
-          <select id="rp-dow">${DOW_NAMES.map((d, i) => `<option value="${i}" ${i === 0 ? 'selected' : ''}>${d}</option>`).join('')}</select>
+          <select id="rp-dow">${DOW_NAMES.map((d, i) => `<option value="${i}" ${(isEdit ? Number(ex['Day Of Week']) === i : i === 0) ? 'selected' : ''}>${d}</option>`).join('')}</select>
         </div>
         <div class="field" id="rp-week-wrap">
           <label>Which week</label>
@@ -3127,19 +3140,20 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
         </div>
       </div>
       <div class="row-2">
-        <div class="field"><label>Start Time</label><input id="rp-start" type="time"></div>
-        <div class="field"><label>End Time</label><input id="rp-end" type="time"></div>
+        <div class="field"><label>Start Time</label><input id="rp-start" type="time" value="${isEdit ? fmtTimeInput(ex['Start Time']) : ''}"></div>
+        <div class="field"><label>End Time</label><input id="rp-end" type="time" value="${isEdit ? fmtTimeInput(ex['End Time']) : ''}"></div>
       </div>
       <div class="row-2">
-        <div class="field"><label>Location</label><input id="rp-location"></div>
-        <div class="field"><label>Max Volunteers</label><input id="rp-max" type="number"></div>
+        <div class="field"><label>Location</label><input id="rp-location" value="${v('Location')}"></div>
+        <div class="field"><label>Max Volunteers</label><input id="rp-max" type="number" value="${v('Max Volunteers')}"></div>
       </div>
       <div class="row-2">
-        <div class="field"><label>Contact Person</label><input id="rp-contact-person" placeholder="Optional"></div>
-        <div class="field"><label>Contact Number</label><input id="rp-contact-number" placeholder="Optional"></div>
+        <div class="field"><label>Contact Person</label><input id="rp-contact-person" value="${v('Contact Person')}" placeholder="Optional"></div>
+        <div class="field"><label>Contact Number</label><input id="rp-contact-number" value="${v('Contact Number')}" placeholder="Optional"></div>
       </div>
-      <div class="field"><label>Notes</label><textarea id="rp-instructions" rows="2" placeholder="Optional — anything volunteers or fellow admins should know"></textarea></div>
-      <button class="btn btn-primary" id="rp-submit">Create Recurring Seva</button>
+      <div class="field"><label>Notes</label><textarea id="rp-instructions" rows="2" placeholder="Optional — anything volunteers or fellow admins should know">${v('Instructions')}</textarea></div>
+      ${isEdit ? '<p class="helper">Saving updates all upcoming dates of this seva (name, time, location, capacity, contacts, notes). If you change the weekday or week, upcoming dates that no longer fit are removed (unless someone is registered) and the new ones are created.</p>' : ''}
+      <button class="btn btn-primary" id="rp-submit">${isEdit ? 'Save Changes' : 'Create Recurring Seva'}</button>
       <p class="helper">"One specific week each month" (e.g. 2nd Sunday) suits most monthly seva. Choose "5th" for a Week 5 that should only run in months with five of that weekday. Pick "Every week" for something like every Sunday instead.</p>
       <div id="rp-msg"></div>
     `);
@@ -3149,6 +3163,9 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
     const syncRecurType = () => { weekWrap.style.display = recurTypeEl.value === 'MONTHLY_NTH' ? 'block' : 'none'; };
     recurTypeEl.addEventListener('change', syncRecurType);
     syncRecurType();
+    if (isEdit && String(ex['Recurrence Type']).toUpperCase() === 'MONTHLY_NTH') {
+      overlay.querySelector('#rp-week').value = String(ex['Week Of Month']).toUpperCase();
+    }
     overlay.querySelector('#rp-submit').addEventListener('click', async () => {
       const payload = {
         pin,
@@ -3165,8 +3182,20 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
         contactNumber: overlay.querySelector('#rp-contact-number').value.trim(),
         instructions: overlay.querySelector('#rp-instructions').value.trim()
       };
-      if (isSuperAdmin) payload.sevaTypeId = overlay.querySelector('#rp-type').value.trim();
+      if (isSuperAdmin && !isEdit) payload.sevaTypeId = overlay.querySelector('#rp-type').value.trim();
       try {
+        if (isEdit) {
+          payload.patternId = ex['Pattern ID'];
+          if (payload.recurrenceType === 'WEEKLY') payload.weekOfMonth = '';
+          const r = await api.post('updateRecurringPattern', payload);
+          bustCache();
+          overlay.remove();
+          const extra = (r.removed || r.created) ? ` ${r.removed || 0} old date(s) removed, ${r.created || 0} new date(s) added.` : '';
+          const review = (r.needsReview || []).length ? ` ${r.needsReview.length} date(s) with registrations need a manual look.` : '';
+          toast('Recurring seva updated.' + extra + review);
+          showRecurring();
+          return;
+        }
         const result = await api.post('createRecurringPattern', payload);
         bustCache();
         overlay.remove();
