@@ -2424,7 +2424,27 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
     `;
   }
 
+  // Deletes a seva (manual or auto-generated). Soft delete on the server: it
+  // disappears from the app, its registrations are cancelled, and a deleted
+  // recurring date is never re-generated.
+  async function deleteSevaFlow(sevaId, sevaList, refresh) {
+    const s = (sevaList || []).find(x => String(x['Seva ID']) === String(sevaId)) || {};
+    const regCount = (s.Registrations || []).length;
+    const label = s['Seva Name'] ? `"${s['Seva Name']}"${s['Date'] ? ' on ' + fmtDate(s['Date']) : ''}` : 'this seva';
+    const warn = regCount ? `\n\n${regCount} registration${regCount === 1 ? '' : 's'} will be cancelled.` : '';
+    if (!confirm(`Delete ${label}? This removes it from the app for everyone.${warn}`)) return;
+    try {
+      await api.post('deleteSeva', { pin, sevaId });
+      bustCache();
+      toast('Seva deleted.');
+      refresh();
+    } catch (e) { toast(e.message); }
+  }
+
   function wireSevaCardActions(scopeEl, sevaList, refresh) {
+    scopeEl.querySelectorAll('[data-delete-seva]').forEach(btn => {
+      btn.addEventListener('click', () => deleteSevaFlow(btn.dataset.deleteSeva, sevaList, refresh));
+    });
     scopeEl.querySelectorAll('[data-attend]').forEach(btn => {
       btn.addEventListener('click', async () => {
         try {
@@ -2687,7 +2707,8 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
             <div style="display:flex; gap:8px; flex-wrap:wrap;">
               <button class="btn btn-ghost small" data-add-participant="${escapeHtml(s['Seva ID'])}">+ Add Participant</button>
               <button class="btn btn-outline small" data-edit-seva="${escapeHtml(s['Seva ID'])}">Edit</button>
-              <button class="btn btn-danger small" data-cancel-seva="${escapeHtml(s['Seva ID'])}">Cancel</button>
+              <button class="btn btn-outline small" data-cancel-seva="${escapeHtml(s['Seva ID'])}">Cancel</button>
+              <button class="btn btn-danger small" data-delete-seva="${escapeHtml(s['Seva ID'])}">Delete</button>
             </div>
           </div>
         `).join('')}</div>` : `<div class="empty">${showHistory ? 'No seva opportunities on record.' : 'No upcoming seva opportunities — create one above, or turn on Show History to see past ones.'}</div>`}
@@ -2712,7 +2733,8 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <button class="btn btn-ghost small" data-add-participant="${escapeHtml(s['Seva ID'])}">+ Add Participant</button>
             <button class="btn btn-outline small" data-edit-seva="${escapeHtml(s['Seva ID'])}">Edit</button>
-            <button class="btn btn-danger small" data-cancel-seva="${escapeHtml(s['Seva ID'])}">Cancel</button>
+            <button class="btn btn-outline small" data-cancel-seva="${escapeHtml(s['Seva ID'])}">Cancel</button>
+            <button class="btn btn-danger small" data-delete-seva="${escapeHtml(s['Seva ID'])}">Delete</button>
           </div>
         </div>
       `).join('')}</div>` : `<div class="empty">${showHistory ? 'No seva opportunities of your type on record.' : 'No upcoming seva opportunities of your type — create one above, or turn on Show History to see past ones.'}</div>`}
@@ -2758,7 +2780,7 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
           <label>Which week</label>
           <select id="ns-week">
             <option value="1" selected>1st</option><option value="2">2nd</option><option value="3">3rd</option>
-            <option value="4">4th</option><option value="LAST">Last</option>
+            <option value="4">4th</option><option value="5">5th (only in months with 5)</option><option value="LAST">Last (4th or 5th)</option>
           </select>
         </div>
       </div>
@@ -2887,7 +2909,10 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
             ${evSeva.length ? evSeva.map(s => `
               <div class="reg-row">
                 <div class="who">${escapeHtml(s['Seva Name'])}<br><span class="m">${fmtDate(s['Date'])} · ${s.RegisteredCount}/${s['Max Volunteers'] || '—'} registered${s['Recurring Pattern ID'] ? ' · recurring' : ''} · ${escapeHtml(s['Status'])}</span></div>
-                <button class="btn btn-outline small" data-edit-event-seva="${escapeHtml(s['Seva ID'])}">Edit</button>
+                <div style="display:flex; gap:6px;">
+                  <button class="btn btn-outline small" data-edit-event-seva="${escapeHtml(s['Seva ID'])}">Edit</button>
+                  <button class="btn btn-danger small" data-delete-event-seva="${escapeHtml(s['Seva ID'])}">Delete</button>
+                </div>
               </div>
             `).join('') : '<p class="muted">No seva added yet.</p>'}
           </div>
@@ -2909,6 +2934,9 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
     });
     body.querySelectorAll('[data-add-seva-event]').forEach(btn => {
       btn.addEventListener('click', () => openSevaModal({ eventId: btn.dataset.addSevaEvent }, showEvents));
+    });
+    body.querySelectorAll('[data-delete-event-seva]').forEach(btn => {
+      btn.addEventListener('click', () => deleteSevaFlow(btn.dataset.deleteEventSeva, seva, showEvents));
     });
     body.querySelectorAll('[data-edit-event-seva]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -2987,14 +3015,27 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
   async function showRecurring() {
     paintTabs('recurring');
     body.innerHTML = skeletons(2);
-    const [patterns, events] = await Promise.all([
+    let [patterns, events] = await Promise.all([
       cachedGet('allRecurringPatterns:' + pin, () => api.get('allRecurringPatterns', { pin }), 8000),
       cachedGet('allEvents:' + pin, () => api.get('allEvents', { pin }), 8000)
     ]);
     const eventName = (id) => { const ev = events.find(e => String(e['Event ID']) === String(id)); return ev ? ev['Event Name'] : null; };
+    // Show patterns in week order (Every week, 1st, 2nd, 3rd, 4th, 5th, Last)
+    // within the same seva type + weekday, so W1..W5 always line up.
+    const weekRank = (p) => {
+      if (String(p['Recurrence Type']).toUpperCase() !== 'MONTHLY_NTH') return 0;
+      const w = String(p['Week Of Month']).toUpperCase();
+      return w === 'LAST' ? 9 : (Number(w) || 1);
+    };
+    patterns = patterns.slice().sort((a, b) =>
+      String(a['Seva Type ID']).localeCompare(String(b['Seva Type ID'])) ||
+      (Number(a['Day Of Week']) - Number(b['Day Of Week'])) ||
+      (weekRank(a) - weekRank(b)) ||
+      String(a['Seva Name']).localeCompare(String(b['Seva Name'])));
     body.innerHTML = `
       <button class="btn btn-primary" id="new-recur-btn" style="margin-bottom:10px;">+ New Recurring Seva</button>
-      <button class="btn btn-ghost" id="generate-recur-btn" style="margin-bottom:14px;">Generate Occurrences Now</button>
+      <button class="btn btn-ghost" id="generate-recur-btn" style="margin-bottom:10px;">Generate Occurrences Now</button>
+      ${isSuperAdmin ? '<button class="btn btn-ghost" id="cleanup-recur-btn" style="margin-bottom:14px;">Fix Wrong Dates (remove duplicate Week 5)</button>' : ''}
       ${patterns.length ? `<div class="card-grid">${patterns.map(p => `
         <div class="card">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
@@ -3021,6 +3062,16 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
         toast(`${result.created} seva occurrence(s) generated.`);
       } catch (e) { toast(e.message); }
     });
+    const cleanupBtn = document.getElementById('cleanup-recur-btn');
+    if (cleanupBtn) cleanupBtn.addEventListener('click', async () => {
+      if (!confirm('Remove upcoming recurring dates that do not match their pattern (for example a Week 5 that landed on the 4th Sunday)? Dates that already have registrations are left alone.')) return;
+      try {
+        const result = await api.post('cleanupRecurringOccurrences', { pin });
+        bustCache();
+        const review = (result.needsReview || []).length;
+        toast(`${result.removed} wrong date(s) removed.` + (review ? ` ${review} with registrations need a manual look.` : ''));
+      } catch (e) { toast(e.message); }
+    });
     body.querySelectorAll('[data-toggle-pattern]').forEach(btn => {
       btn.addEventListener('click', async () => {
         try {
@@ -3037,8 +3088,9 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
     const dow = DOW_NAMES[Number(p['Day Of Week'])] || '';
     if (String(p['Recurrence Type']).toUpperCase() === 'MONTHLY_NTH') {
       const nth = p['Week Of Month'];
-      const label = String(nth).toUpperCase() === 'LAST' ? 'Last' : { 1: '1st', 2: '2nd', 3: '3rd', 4: '4th' }[nth] || nth;
-      return `🗓 ${label} ${dow} of every month`;
+      const label = String(nth).toUpperCase() === 'LAST' ? 'Last' : { 1: '1st', 2: '2nd', 3: '3rd', 4: '4th', 5: '5th' }[nth] || nth;
+      const note = String(nth) === '5' ? ' (only in months with five)' : '';
+      return `🗓 ${label} ${dow} of every month${note}`;
     }
     return `🔁 Every ${dow}`;
   }
@@ -3070,7 +3122,7 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
           <label>Which week</label>
           <select id="rp-week">
             <option value="1" selected>1st</option><option value="2">2nd</option><option value="3">3rd</option>
-            <option value="4">4th</option><option value="LAST">Last</option>
+            <option value="4">4th</option><option value="5">5th (only in months with 5)</option><option value="LAST">Last (4th or 5th)</option>
           </select>
         </div>
       </div>
@@ -3088,7 +3140,7 @@ async function renderAdminDashboard(content, pin, isSuperAdmin, overview) {
       </div>
       <div class="field"><label>Notes</label><textarea id="rp-instructions" rows="2" placeholder="Optional — anything volunteers or fellow admins should know"></textarea></div>
       <button class="btn btn-primary" id="rp-submit">Create Recurring Seva</button>
-      <p class="helper">"One specific week each month" (e.g. 2nd Sunday) suits most monthly seva. Pick "Every week" for something like every Sunday instead.</p>
+      <p class="helper">"One specific week each month" (e.g. 2nd Sunday) suits most monthly seva. Choose "5th" for a Week 5 that should only run in months with five of that weekday. Pick "Every week" for something like every Sunday instead.</p>
       <div id="rp-msg"></div>
     `);
     overlay.querySelector('#modal-close').addEventListener('click', () => overlay.remove());
